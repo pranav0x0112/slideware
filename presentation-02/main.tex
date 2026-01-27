@@ -1,0 +1,360 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\setbeamertemplate{footline}{
+  \hfill
+  \insertframenumber{} / \inserttotalframenumber
+  \hspace{0.5cm}
+}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{
+  \begin{beamercolorbox}[wd=\paperwidth,ht=11.5ex,dp=1.5ex]{}
+    \hfill
+    \includegraphics[height=1cm]{images/chips_logo.png}
+    \hspace{0.3cm}
+  \end{beamercolorbox}
+}
+
+\usepackage{graphicx}
+
+\title{SDR, DDR \& LPDDR}
+\subtitle{Evolution of Synchronous DRAM Interfaces}
+\author{
+Pranav M -- PES2UG23EC076\\
+Lalith -- PES2UG23EC074\\
+Harshini -- PES2UG23EC028
+}
+\begin{document}
+\date{}
+
+%------------------------------------------------
+% Slide 1: Title
+%------------------------------------------------
+\begin{frame}
+    \titlepage
+\end{frame}
+
+
+% Slide 2: Where DRAM sits in a system
+\begin{frame}{Where DRAM sits in a system}
+    \begin{itemize}
+        \item The CPU executes instructions and requests data continuously
+        \item DRAM acts as the main working memory for active programs and data
+        \item Storage is used for long-term data and is accessed much less frequently
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/system_view.png}
+\end{frame}
+
+
+% Slide 3: Why DRAM exists
+\begin{frame}{Why DRAM exists}
+    \begin{itemize}
+        \item Accessing storage directly is too slow for CPU execution
+        \item Cache memory is fast but limited in size and expensive
+        \item DRAM provides a balance between speed, capacity, and cost
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/dram_tradeoff.png}
+\end{frame}
+
+% Slide 4: What is SDRAM
+\begin{frame}{What is SDRAM}
+    \begin{itemize}
+        \item SDRAM stands for Dynamic Random Access Memory
+        \item All operations are synchronized to an external clock
+        \item Data is stored as charge in capacitor-based memory cells
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/sdram_basic.png}
+\end{frame}
+
+
+% Slide 5: Working of SDRAM
+\begin{frame}{Working of SDRAM}
+    \begin{itemize}
+        \item A row is activated, loading data into the sense amplifiers
+        \item A column is selected to perform a read or write operation
+        \item The row is precharged before accessing the next row
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/sdram_working.png}
+\end{frame}
+
+% Slide 6: Read and Write Operations in SDRAM
+\begin{frame}{Read and Write Operations in SDRAM}
+    \begin{itemize}
+        \item Writing stores charge in a capacitor through an access transistor
+        \item Reading transfers the stored charge to the bitline
+        \item Sense amplifiers detect and amplify very small voltage changes
+        \item Read operations are destructive and require immediate restoration
+    \end{itemize}
+\end{frame}
+
+% Slide 7: Refresh Operation in SDRAM
+\begin{frame}{Refresh Operation in SDRAM}
+    \begin{itemize}
+        \item Charge stored in capacitors leaks over time
+        \item SDRAM periodically refreshes all rows to retain data
+        \item Refresh internally reads and restores stored charge
+        \item Typical refresh interval is around 64 ms
+    \end{itemize}
+\end{frame}
+
+% Slide 8: Memory Organization in SDRAM
+
+\begin{frame}{Memory Organization in SDRAM}
+    \begin{itemize}
+        \item Unlike SRAM, SDRAM is not a simple linear array
+        \item Memory addresses are divided into bank, row, and column fields
+        \item Address format: [Bank][Row][Column]
+        \item This organization reflects the physical layout of DRAM cells
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/sdram_addressing.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 9: Why Banks, Rows, and Columns?
+%------------------------------------------------
+\begin{frame}{Why Banks, Rows, and Columns?}
+    \begin{itemize}
+        \item DRAM cells are arranged as a 2D array for efficient fabrication
+        \item Entire rows are sensed together using shared sense amplifiers
+        \item Keeping a row open enables fast repeated accesses (row buffer hits)
+        \item Multiple banks allow parallel operations and hide memory latency
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/sdram_banks.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 10: SDR (Single Data Rate)
+%------------------------------------------------
+\begin{frame}{SDR (Single Data Rate)}
+    \begin{itemize}
+        \item Transfers one data word per clock cycle
+        \item Data is sampled only on the rising edge of the clock
+        \item Memory bandwidth is directly limited by clock frequency
+        \item Row and column commands are synchronized to the clock
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/sdr_timing.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 11: SDR Key Operations
+%------------------------------------------------
+\begin{frame}{SDR Key Operations}
+    \begin{itemize}
+        \item RAS command activates a row in the selected bank
+        \item Activated row data is latched into sense amplifiers
+        \item Column READ or WRITE accesses data from sense amplifiers
+        \item Precharge closes the row before another row can be activated
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[height=0.5\textheight]{images/sdr_operations.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 12: SDR Timing Parameters and Commands
+%------------------------------------------------
+\begin{frame}{SDR Timing Parameters and Commands}
+    \begin{itemize}
+        \item tRCD: Delay between row activation and column access
+        \item tRP: Time required to precharge before next activation
+        \item CL (CAS Latency): Cycles from READ command to data output
+        \item All operations are constrained by strict timing parameters
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/sdr_timing_params.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 13: Why Use SDR SDRAM?
+%------------------------------------------------
+\begin{frame}{Why Use SDR SDRAM?}
+    \begin{itemize}
+        \item Cost-effective, high-density memory compared to SRAM
+        \item Sufficient bandwidth for embedded and legacy systems
+        \item Well-standardized with simple controller design
+        \item Serves as a foundation for understanding DDR technologies
+    \end{itemize}
+\end{frame}
+
+%------------------------------------------------
+% Slide 14: DDR (Double Data Rate)
+%------------------------------------------------
+\begin{frame}{DDR (Double Data Rate)}
+    \begin{itemize}
+        \item Transfers two data words per clock cycle
+        \item Data is sampled on both rising and falling clock edges
+        \item Achieves higher bandwidth without increasing clock frequency
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/ddr_timing.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 15: DDR Architectural Upgrade (2n Prefetch)
+%------------------------------------------------
+\begin{frame}{DDR Architectural Upgrade: 2n Prefetch}
+    \begin{itemize}
+        \item DRAM core operates at single-edge (SDR-like) speed
+        \item Prefetch buffer reads multiple data words per access
+        \item I/O interface transmits data on both clock edges
+        \item Enables high bandwidth without faster memory cells
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/ddr_prefetch.png}
+\end{frame}
+
+
+%------------------------------------------------
+% Slide 16: Clocking and Data Capture in DDR
+%------------------------------------------------
+\begin{frame}{Clocking and Data Capture in DDR}
+    \begin{itemize}
+        \item Uses differential clock signals (CK and CK\#)
+        \item Introduces Data Strobe (DQS) for precise data capture
+        \item Delay-Locked Loop (DLL) aligns internal and external timing
+        \item Improves signal integrity at higher operating frequencies
+    \end{itemize}
+\end{frame}
+
+
+%------------------------------------------------
+% Slide 17: DDR Generations and Scaling
+%------------------------------------------------
+\begin{frame}{DDR Generations and Scaling}
+    \begin{itemize}
+        \item Prefetch depth increases across generations
+        \item External I/O bandwidth scales faster than core speed
+        \item Bank groups introduced to sustain high throughput
+        \item Operating voltage reduces with each generation
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/ddr_generations.png}
+\end{frame}
+
+
+%------------------------------------------------
+% Slide 18: Advantages and Trade-offs of DDR
+%------------------------------------------------
+\begin{frame}{Advantages and Trade-offs of DDR}
+    \begin{itemize}
+        \item Doubles bandwidth without increasing clock frequency
+        \item Prefetch and bank interleaving improve throughput
+        \item Efficient for sequential access patterns
+        \item Trade-off: higher latency for random accesses
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+\end{frame}
+
+%------------------------------------------------
+% Slide 19: What is LPDDR?
+%------------------------------------------------
+\begin{frame}{LPDDR: Low Power DDR}
+    \begin{itemize}
+        \item Designed for mobile and battery-powered devices
+        \item Prioritizes power efficiency over peak performance
+        \item Based on DDR architecture with aggressive power optimizations
+        \item Widely used with SoCs in phones, tablets, and embedded systems
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/lpddr_overview.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 20: Power-Saving Techniques in LPDDR
+%------------------------------------------------
+\begin{frame}{Power-Saving Techniques in LPDDR}
+    \begin{itemize}
+        \item Operates at significantly lower core and I/O voltages
+        \item Supports multiple low-power and deep sleep states
+        \item Self-refresh and deep power-down reduce idle power
+        \item Optimized refresh and clock gating minimize energy usage
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[height=0.5\textheight]{images/lpddr_power_states.png}
+\end{frame}
+
+
+%------------------------------------------------
+% Slide 21: Evolution of LPDDR
+%------------------------------------------------
+\begin{frame}{Evolution of LPDDR}
+    \begin{itemize}
+        \item LPDDR generations steadily reduce operating voltage
+        \item Bandwidth increases while maintaining power efficiency
+        \item Prefetch depth increases across generations
+        \item New features added for reliability and energy savings
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/lpddr_generations.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 22: SDR vs DDR vs LPDDR
+%------------------------------------------------
+\begin{frame}{SDR vs DDR vs LPDDR}
+    \begin{itemize}
+        \item SDR: Simple design with limited bandwidth
+        \item DDR: High performance through double-edge transfers
+        \item LPDDR: Optimized for low power and mobile systems
+        \item Choice depends on performance, power, and system needs
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    % \includegraphics[width=0.7\textwidth]{images/memory_comparison.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 23: Key Takeaways
+%------------------------------------------------
+\begin{frame}{Key Takeaways}
+    \begin{itemize}
+        \item All DRAM types share the same core memory principles
+        \item SDR, DDR, and LPDDR differ in interface and optimization goals
+        \item Modern systems choose memory based on performance and power needs
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \centering
+    % \includegraphics[width=0.5\textwidth]{images/final_tradeoff.png}
+\end{frame}
+
+
+\end{document}

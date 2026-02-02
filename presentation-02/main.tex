@@ -21,7 +21,7 @@
 \author{
 Pranav M -- PES2UG23EC076\\
 Lalith -- PES2UG23EC074\\
-Harshini -- PES2UG23EC028
+Harshini -- PES2UG23EC058
 }
 \begin{document}
 \date{}
@@ -120,11 +120,19 @@ Harshini -- PES2UG23EC028
 
     \vspace{0.3cm}
     \centering
-    \includegraphics[width=0.4\textwidth]{images/sdram_addressing.png}
+    \includegraphics[width=0.3\textwidth]{images/sdram_addressing.png}
 \end{frame}
 
 %------------------------------------------------
-% Slide 9: Why Banks, Rows, and Columns?
+% Slide 9: SDRAM Internal Block Diagram
+%------------------------------------------------
+\begin{frame}{SDRAM Internal Block Diagram (Architecture View)}
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/sdram_block_diagram.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 10: Why Banks, Rows, and Columns?
 %------------------------------------------------
 \begin{frame}{Why Banks, Rows, and Columns?}
     \begin{itemize}
@@ -140,39 +148,53 @@ Harshini -- PES2UG23EC028
 \end{frame}
 
 %------------------------------------------------
-% Slide 10: SDR (Single Data Rate)
+% Slide 11: SDRAM Timing Diagram
+%------------------------------------------------
+\begin{frame}{SDRAM Timing: ACT $\rightarrow$ READ $\rightarrow$ PRE}
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/sdram_timing.png}
+\end{frame}
+
+%------------------------------------------------
+% Slide 12: SDR (Single Data Rate)
 %------------------------------------------------
 \begin{frame}{SDR (Single Data Rate)}
     \begin{itemize}
         \item Transfers one data word per clock cycle
         \item Data is sampled only on the rising edge of the clock
-        \item Memory bandwidth is directly limited by clock frequency
+        \item Memory bandwidth scales linearly with clock frequency (one transfer per cycle)
         \item Row and column commands are synchronized to the clock
+        \item Internal DRAM core operates asynchronously but is synchronized at the interface
     \end{itemize}
 
     \vspace{0.3cm}
     \centering
-    \includegraphics[width=0.7\textwidth]{images/sdr_timing.png}
+    \includegraphics[width=0.6\textwidth]{images/sdr_timing.png}
+\end{frame}
+
+\begin{frame}{SDR SDRAM Internal Block Diagram (Architecture View)}
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/sdr_sdram_block_diagram.png}
 \end{frame}
 
 %------------------------------------------------
-% Slide 11: SDR Key Operations
+% Slide 13: SDR Key Operations
 %------------------------------------------------
 \begin{frame}{SDR Key Operations}
     \begin{itemize}
         \item RAS command activates a row in the selected bank
-        \item Activated row data is latched into sense amplifiers
-        \item Column READ or WRITE accesses data from sense amplifiers
+        \item Activated row data is latched into sense amplifiers (row buffer)
+        \item Column READ or WRITE accesses data from the active row buffer
         \item Precharge closes the row before another row can be activated
     \end{itemize}
 
     \vspace{0.3cm}
     \centering
-    \includegraphics[height=0.5\textheight]{images/sdr_operations.png}
+    \includegraphics[height=0.4\textheight]{images/sdr_operations.png}
 \end{frame}
 
 %------------------------------------------------
-% Slide 12: SDR Timing Parameters and Commands
+% Slide 14: SDR Timing Parameters and Commands
 %------------------------------------------------
 \begin{frame}{SDR Timing Parameters and Commands}
     \begin{itemize}
@@ -188,7 +210,7 @@ Harshini -- PES2UG23EC028
 \end{frame}
 
 %------------------------------------------------
-% Slide 13: Why Use SDR SDRAM?
+% Slide 15: Why Use SDR SDRAM?
 %------------------------------------------------
 \begin{frame}{Why Use SDR SDRAM?}
     \begin{itemize}

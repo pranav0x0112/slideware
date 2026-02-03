@@ -1,0 +1,483 @@
+\documentclass{beamer}
+\usetheme{default}
+\usecolortheme{default}
+
+\title{DRAM and DDR Memory}
+\subtitle{Dynamic Random Access Memory Architecture}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+%% Slide 2: Why DRAM Exists
+\begin{frame}{Why DRAM Exists}
+\textbf{Two Memory Types for Different Purposes:}
+\begin{itemize}
+    \item \textbf{SSDs:} Long-term storage
+    \begin{itemize}
+        \item 3D arrays with trillions of cells
+        \item Terabytes capacity
+        \item Access time: $\sim$50 microseconds
+    \end{itemize}
+    \item \textbf{DRAM:} Working memory
+    \begin{itemize}
+        \item 2D arrays with billions of capacitor cells
+        \item Gigabytes capacity
+        \item Access time: $\sim$17 nanoseconds (\textbf{3000× faster})
+    \end{itemize}
+\end{itemize}
+\vspace{0.3cm}
+CPU processes only data stored in DRAM
+
+% Placeholder for diagram comparing SSD vs DRAM
+\end{frame}
+
+%% Slide 3: How They Work Together
+\begin{frame}{How SSD and DRAM Work Together}
+\textbf{Data Transfer Process:}
+\begin{itemize}
+    \item Data copied from SSD to DRAM during loading
+    \item \textbf{Prefetching:} Moving data before it's needed
+    \item System stores terabytes on SSD
+    \item Frequently accessed data retrieved from DRAM in nanoseconds
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Practical Application:}
+\begin{itemize}
+    \item Programs require loading into DRAM before execution
+    \item Large applications need significant DRAM capacity
+    \item Without DRAM: System performance 3,000× slower
+    \item DRAM requires continuous power to maintain data
+\end{itemize}
+
+% Placeholder for diagram showing data flow: SSD → DRAM → CPU
+\end{frame}
+
+%% Slide 4: DRAM Module Overview
+\begin{frame}{DRAM Module Overview (DIMM)}
+\textbf{Physical Structure:}
+\begin{itemize}
+    \item DIMM = Dual Inline Memory Module
+    \item Typical configuration: 8 DRAM chips per module
+    \item Multiple slots on motherboard (usually 4)
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{System Integration:}
+\begin{itemize}
+    \item Connected to CPU via memory channels through motherboard
+    \item Two independent memory channels
+    \item Memory controller in CPU manages all communication
+    \item CPU also manages separate connections to storage devices
+\end{itemize}
+
+% Placeholder for diagram of DIMM stick and motherboard connection
+\end{frame}
+
+%% Slide 5: Memory Channels (DDR5)
+\begin{frame}{Memory Channels in DDR5}
+\textbf{Channel Structure:}
+\begin{itemize}
+    \item Each memory channel divided into Channel A and Channel B
+    \item Independent operation, 32 bits transferred per channel
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Signal Lines per Channel:}
+\begin{itemize}
+    \item 32 data wires for actual data transfer
+    \item 21 address wires for memory location
+    \item 7 control wires for commands
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Parallel Processing:}
+\begin{itemize}
+    \item All 4 chips on channel receive same address/commands
+    \item Data lines divided: each chip handles 8 bits
+    \item Power managed by dedicated chips on module
+\end{itemize}
+
+% Placeholder for diagram showing memory channel architecture
+\end{frame}
+
+%% Slide 6: Inside a DRAM Chip
+\begin{frame}{Inside a DRAM Chip}
+\textbf{Physical Components:}
+\begin{itemize}
+    \item Packaging contains interconnection matrix
+    \item Ball grid array connects to die (main chip)
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Die Organization (2 GB chip):}
+\begin{itemize}
+    \item 8 bank groups × 4 banks = \textbf{32 banks total}
+    \item Each bank: 65,536 rows × 8,192 columns
+    \item Total: $\sim$17 billion memory cells
+    \item Complex network of wires and supporting circuits
+\end{itemize}
+
+% Placeholder for diagram of chip internals and bank organization
+\end{frame}
+
+%% Slide 7: Memory Addressing Scheme
+\begin{frame}{31-Bit Memory Addressing}
+\textbf{Accessing 17 billion cells requires 31-bit address:}
+
+\vspace{0.3cm}
+\begin{itemize}
+    \item \textbf{3 bits:} Bank group selection (8 groups)
+    \item \textbf{2 bits:} Bank selection (4 per group)
+    \item \textbf{16 bits:} Row selection (65,536 rows)
+    \item \textbf{10 bits:} Column group (8,192 ÷ 8)
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Transmission Optimization:}
+\begin{itemize}
+    \item Address sent in two parts using 21 wires
+    \item Part 1: Bank group + bank + row
+    \item Part 2: Column address
+    \item Each access reads/writes 8 bits simultaneously
+\end{itemize}
+
+% Placeholder for diagram showing address bit breakdown
+\end{frame}
+
+%% Slide 8: Memory Cell Structure (1T1C)
+\begin{frame}{Memory Cell Structure: 1T1C}
+\textbf{Components (each stores 1 bit):}
+
+\vspace{0.3cm}
+\textbf{1. Capacitor:}
+\begin{itemize}
+    \item Deep trench in silicon (few dozen nanometers)
+    \item Two conductive surfaces with dielectric insulator
+    \item 1V = binary 1, 0V = binary 0
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{2. Access Transistor:}
+\begin{itemize}
+    \item Wordline activates transistor gate
+    \item Bitline connects to transistor channel
+    \item Controls capacitor access
+\end{itemize}
+
+% Placeholder for diagram of 1T1C cell structure
+\end{frame}
+
+%% Slide 9: How Memory Cells Store Data
+\begin{frame}{How Memory Cells Store Data}
+\textbf{Write Operation:}
+\begin{itemize}
+    \item Wordline ON $\rightarrow$ connects capacitor to bitline
+    \item Charge flows to write 1 or discharge for 0
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Read Operation:}
+\begin{itemize}
+    \item Wordline ON $\rightarrow$ measure capacitor charge
+    \item Charge amount indicates stored value
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Data Retention Challenge:}
+\begin{itemize}
+    \item Wordline OFF isolates capacitor
+    \item Electron leakage through tiny transistor
+    \item Requires periodic refresh
+\end{itemize}
+
+% Placeholder for diagram showing read/write operations
+\end{frame}
+
+%% Slide 10: Memory Array Organization
+\begin{frame}{Memory Array Organization}
+\textbf{Array Structure:}
+\begin{itemize}
+    \item \textbf{Wordlines:} Rows connecting to transistor gates
+    \item \textbf{Bitlines:} Columns connecting to transistor channels
+    \item Different vertical layers (no physical contact)
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Operation Rules:}
+\begin{itemize}
+    \item Active wordline connects entire row to bitlines
+    \item \textbf{Only ONE wordline active at a time}
+    \item Multiple active wordlines cause data interference
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Cell Access:}
+\begin{itemize}
+    \item Row decoder: 16 bits activate single wordline
+    \item Column multiplexer: 10 bits select 8 bitlines
+\end{itemize}
+
+% Placeholder for diagram of array with wordlines and bitlines
+\end{frame}
+
+%% Slide 11: Reading from Memory Cells
+\begin{frame}{Reading from Memory Cells}
+\textbf{Read Process:}
+\begin{enumerate}
+    \item CPU sends read command + 31-bit address
+    \item Select bank (5 bits)
+    \item Turn off all wordlines, precharge bitlines to 0.5V
+    \item Activate one wordline using 16-bit row address
+    \item Capacitors connect to bitlines:
+    \begin{itemize}
+        \item Stored 1: bitline voltage increases
+        \item Stored 0: bitline voltage decreases
+    \end{itemize}
+    \item Sense amplifiers detect and amplify voltage change
+    \item Drive bitlines to full 1V or 0V
+    \item Row now "open" with all 8,192 bitlines at correct values
+    \item Column multiplexer selects 8 bitlines (10-bit address)
+    \item Read driver transmits 8 bits to CPU
+\end{enumerate}
+
+% Placeholder for diagram illustrating read process
+\end{frame}
+
+%% Slide 12: Writing to Memory Cells
+\begin{frame}{Writing to Memory Cells}
+\textbf{Write Process:}
+\begin{enumerate}
+    \item CPU sends write command + address + 8 data bits
+    \item Select bank (5 bits)
+    \item Isolate capacitors, precharge bitlines to 0.5V
+    \item Activate row (16-bit address)
+    \item Sense amplifiers open row
+    \item Column multiplexer connects 8 bitlines (10-bit address)
+    \item Write drivers override bitline voltages:
+    \begin{itemize}
+        \item 1V for binary 1
+        \item 0V for binary 0
+    \end{itemize}
+    \item New voltages update capacitor charges
+    \item 8 bits successfully written
+\end{enumerate}
+
+\vspace{0.2cm}
+\textbf{Note:} All 4 chips operate concurrently with same address but different data
+
+% Placeholder for diagram illustrating write process
+\end{frame}
+
+%% Slide 13: Refresh Operation
+\begin{frame}{Refresh Operation}
+\textbf{Why Refresh:}
+\begin{itemize}
+    \item Nanoscale transistors leak electrons over time
+    \item Without refresh: data loss
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Refresh Process:}
+\begin{enumerate}
+    \item Close all rows
+    \item Precharge bitlines to 0.5V
+    \item Open one row
+    \item Sense amplifiers restore full voltage (1V or 0V)
+    \item Repeat for each row
+\end{enumerate}
+
+\vspace{0.3cm}
+\textbf{Timing:}
+\begin{itemize}
+    \item 50 nanoseconds per row
+    \item $\sim$3 milliseconds for all 65,536 rows
+    \item Occurs every 64 milliseconds per bank
+\end{itemize}
+
+% Placeholder for diagram showing refresh cycle
+\end{frame}
+
+%% Slide 14: Row Hits vs Row Misses
+\begin{frame}{Row Hits vs Row Misses}
+\textbf{Row Hit (Page Hit):}
+\begin{itemize}
+    \item Address in already-open row
+    \item Use only 10-bit column address
+    \item Much faster (skip row opening)
+    \item Can occur repeatedly
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Row Miss:}
+\begin{itemize}
+    \item Address in different row
+    \item Must close current row, open new row
+    \item Significantly slower
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Timing Parameters (clock cycles):}
+\begin{itemize}
+    \item Row hit to data delivery
+    \item Row opening time
+    \item Precharge time
+    \item Row activation to precharge interval
+\end{itemize}
+
+\vspace{0.2cm}
+Systems optimized to maximize row hits, avoid thrashing
+
+% Placeholder for diagram comparing row hit vs row miss timing
+\end{frame}
+
+%% Slide 15: Why 32 Banks?
+\begin{frame}{Why 32 Banks?}
+\textbf{Parallelism Benefits:}
+\begin{itemize}
+    \item Each bank operates independently
+    \item Multiple rows open simultaneously across banks
+    \item Increases row hit probability
+    \item Reduces average access time
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Bank Groups:}
+\begin{itemize}
+    \item 8 bank groups × 4 banks = 32 total
+    \item Refresh one bank per group while using others
+    \item Minimizes refresh impact
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Array Efficiency:}
+\begin{itemize}
+    \item Banks are tall and narrow
+    \item Combined: 65,536 rows × 262,144 columns
+    \item 31 divisions create flexibility for operations
+\end{itemize}
+
+% Placeholder for diagram showing bank organization
+\end{frame}
+
+%% Slide 16: Burst Buffer Optimization
+\begin{frame}{Burst Buffer Optimization}
+\textbf{Design:}
+\begin{itemize}
+    \item 128-bit temporary storage buffer
+    \item 10-bit column address split: 6 bits (mux) + 4 bits (buffer)
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Operation:}
+\begin{itemize}
+    \item 6 bits connect 128 cells to buffer
+    \item 4 bits select 8 data locations from buffer
+    \item Cycle through combinations: 16 sets × 8 bits
+    \item \textbf{Burst length = 16}
+    \item Total: 1,024 bits accessed quickly per chip
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Benefits:}
+\begin{itemize}
+    \item Fast sequential data access
+    \item Maintains random access granularity
+\end{itemize}
+
+% Placeholder for diagram of burst buffer architecture
+\end{frame}
+
+%% Slide 17: Subarrays and Hierarchical Design
+\begin{frame}{Subarrays and Hierarchical Design}
+\textbf{Challenge:}
+\begin{itemize}
+    \item Large 65,536 × 8,192 arrays
+    \item Extremely long wordlines and bitlines
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Solution:}
+\begin{itemize}
+    \item Subdivide into 1,024 × 1,024 subarrays
+    \item Intermediate sense amplifiers per subarray
+    \item Hierarchical row decoding
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Benefits:}
+\begin{itemize}
+    \item Shorter bitlines $\rightarrow$ smaller capacitors
+    \item Shorter wordlines $\rightarrow$ reduced capacitive load
+    \item Faster transistor activation
+    \item Improved performance
+\end{itemize}
+
+% Placeholder for diagram showing subarray organization
+\end{frame}
+
+%% Slide 18: Differential Pair and Folded Architecture
+\begin{frame}{Differential Pair Architecture}
+\textbf{Design:}
+\begin{itemize}
+    \item Two bitlines per sense amplifier
+    \item Alternating rows connect to different bitlines
+    \item Half bitlines active, half passive at any time
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Cross-Coupled Inverter:}
+\begin{itemize}
+    \item Active bitline = 1 $\rightarrow$ passive = 0
+    \item Active bitline = 0 $\rightarrow$ passive = 1
+    \item Creates differential pair (opposite values)
+    \item Passive bitline not connected to cells
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Key Benefits:}
+\begin{enumerate}
+    \item Easy precharging: charge equalizes to 0.5V
+    \item Noise immunity from opposite charges
+    \item Reduced parasitic capacitance
+\end{enumerate}
+
+% Placeholder for diagram of differential pair architecture
+\end{frame}
+
+%% Slide 19: Conclusion
+\begin{frame}{Conclusion}
+\textbf{Key Concepts Covered:}
+\begin{itemize}
+    \item DRAM role in memory hierarchy
+    \item Internal structure: banks, arrays, cells
+    \item Core operations: read, write, refresh
+    \item Performance optimizations
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{DRAM Performance:}
+\begin{itemize}
+    \item 4.8 billion operations per second
+    \item 17 nanosecond access time
+    \item Continuous refresh (16 times/second per bank)
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Significance:}
+\begin{itemize}
+    \item 3,000× faster than SSD access
+    \item Critical for modern computing performance
+    \item Enables efficient program execution
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\centering
+\Huge Thank You!
+\end{frame}
+
+\end{document}

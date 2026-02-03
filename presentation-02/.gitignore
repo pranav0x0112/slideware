@@ -10,9 +10,6 @@
 *.fdb_latexmk
 *.synctex.gz
 
-# PDFs (generated output)
-*.pdf
-
 # Backup / temp files
 *.bak
 *~

@@ -1,83 +1,65 @@
 \documentclass{beamer}
 \usetheme{default}
 \usecolortheme{default}
-
+\usepackage{graphicx}
+\date{}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{
+  \begin{beamercolorbox}[wd=\paperwidth,ht=11.5ex,dp=1.5ex]{}
+    \hfill
+    \includegraphics[height=1cm]{../images_yt_video/chips_logo.png}
+    \hspace{0.3cm}
+  \end{beamercolorbox}
+}
+% Footline: show slide number and total slides
+\setbeamertemplate{footline}{%
+    \begin{beamercolorbox}[wd=\paperwidth,ht=2.5ex,dp=2.5ex]{}%
+       \makebox[\paperwidth][r]{\kern-0.7cm Slide \insertframenumber{} / \inserttotalframenumber\hspace{0.3cm}}%
+    \end{beamercolorbox}%
+}
 \title{DRAM and DDR Memory}
 \subtitle{Dynamic Random Access Memory Architecture}
-\author{Your Name}
-\date{\today}
 
 \begin{document}
 
 \frame{\titlepage}
 
-%% Slide 2: Why DRAM Exists
-\begin{frame}{Why DRAM Exists}
-\textbf{Two Memory Types for Different Purposes:}
+%% Slide 2: How They Work Together
+\begin{frame}{Loading and Prefetching}
+\textbf{Loading:}
 \begin{itemize}
-    \item \textbf{SSDs:} Long-term storage
-    \begin{itemize}
-        \item 3D arrays with trillions of cells
-        \item Terabytes capacity
-        \item Access time: $\sim$50 microseconds
-    \end{itemize}
-    \item \textbf{DRAM:} Working memory
-    \begin{itemize}
-        \item 2D arrays with billions of capacitor cells
-        \item Gigabytes capacity
-        \item Access time: $\sim$17 nanoseconds (\textbf{3000× faster})
-    \end{itemize}
+    \item Data copied from SSD to DRAM during program startup
+    \item CPU can only process data after it's in DRAM
+    \item Takes time (loading bar appears)
 \end{itemize}
-\vspace{0.3cm}
-CPU processes only data stored in DRAM
 
-% Placeholder for diagram comparing SSD vs DRAM
+\vspace{0.5cm}
+\textbf{Prefetching:}
+\begin{itemize}
+    \item Moving data to DRAM before it's needed
+    \item Anticipates future data requirements
+    \item Minimizes wait time during execution
+\end{itemize}
 \end{frame}
 
-%% Slide 3: How They Work Together
-\begin{frame}{How SSD and DRAM Work Together}
-\textbf{Data Transfer Process:}
-\begin{itemize}
-    \item Data copied from SSD to DRAM during loading
-    \item \textbf{Prefetching:} Moving data before it's needed
-    \item System stores terabytes on SSD
-    \item Frequently accessed data retrieved from DRAM in nanoseconds
-\end{itemize}
-
-\vspace{0.3cm}
-\textbf{Practical Application:}
-\begin{itemize}
-    \item Programs require loading into DRAM before execution
-    \item Large applications need significant DRAM capacity
-    \item Without DRAM: System performance 3,000× slower
-    \item DRAM requires continuous power to maintain data
-\end{itemize}
-
-% Placeholder for diagram showing data flow: SSD → DRAM → CPU
-\end{frame}
-
-%% Slide 4: DRAM Module Overview
+%% Slide 3: DRAM Module Overview
 \begin{frame}{DRAM Module Overview (DIMM)}
-\textbf{Physical Structure:}
+\textbf{Structure:}
 \begin{itemize}
     \item DIMM = Dual Inline Memory Module
-    \item Typical configuration: 8 DRAM chips per module
-    \item Multiple slots on motherboard (usually 4)
+    \item 8 DRAM chips per module (typical)
+    \item Connected to CPU via memory channels
 \end{itemize}
 
-\vspace{0.3cm}
-\textbf{System Integration:}
+\vspace{0.5cm}
+\textbf{Connection:}
 \begin{itemize}
-    \item Connected to CPU via memory channels through motherboard
     \item Two independent memory channels
-    \item Memory controller in CPU manages all communication
-    \item CPU also manages separate connections to storage devices
+    \item Memory controller in CPU manages communication
 \end{itemize}
-
-% Placeholder for diagram of DIMM stick and motherboard connection
 \end{frame}
 
-%% Slide 5: Memory Channels (DDR5)
+%% Slide 4: Memory Channels (DDR5)
 \begin{frame}{Memory Channels in DDR5}
 \textbf{Channel Structure:}
 \begin{itemize}
@@ -100,11 +82,9 @@ CPU processes only data stored in DRAM
     \item Data lines divided: each chip handles 8 bits
     \item Power managed by dedicated chips on module
 \end{itemize}
-
-% Placeholder for diagram showing memory channel architecture
 \end{frame}
 
-%% Slide 6: Inside a DRAM Chip
+%% Slide 5: Inside a DRAM Chip
 \begin{frame}{Inside a DRAM Chip}
 \textbf{Physical Components:}
 \begin{itemize}
@@ -120,8 +100,13 @@ CPU processes only data stored in DRAM
     \item Total: $\sim$17 billion memory cells
     \item Complex network of wires and supporting circuits
 \end{itemize}
+\end{frame}
 
-% Placeholder for diagram of chip internals and bank organization
+%% Slide 6: DRAM Block Diagram
+\begin{frame}
+\begin{center}
+\includegraphics[width=0.95\textwidth]{../images_yt_video/dram_block_diagram.png}
+\end{center}
 \end{frame}
 
 %% Slide 7: Memory Addressing Scheme
@@ -144,8 +129,6 @@ CPU processes only data stored in DRAM
     \item Part 2: Column address
     \item Each access reads/writes 8 bits simultaneously
 \end{itemize}
-
-% Placeholder for diagram showing address bit breakdown
 \end{frame}
 
 %% Slide 8: Memory Cell Structure (1T1C)
@@ -167,8 +150,6 @@ CPU processes only data stored in DRAM
     \item Bitline connects to transistor channel
     \item Controls capacitor access
 \end{itemize}
-
-% Placeholder for diagram of 1T1C cell structure
 \end{frame}
 
 %% Slide 9: How Memory Cells Store Data
@@ -193,8 +174,6 @@ CPU processes only data stored in DRAM
     \item Electron leakage through tiny transistor
     \item Requires periodic refresh
 \end{itemize}
-
-% Placeholder for diagram showing read/write operations
 \end{frame}
 
 %% Slide 10: Memory Array Organization
@@ -220,178 +199,191 @@ CPU processes only data stored in DRAM
     \item Row decoder: 16 bits activate single wordline
     \item Column multiplexer: 10 bits select 8 bitlines
 \end{itemize}
-
-% Placeholder for diagram of array with wordlines and bitlines
 \end{frame}
 
-%% Slide 11: Reading from Memory Cells
+%% Slide 11: Array Organization Diagram
+\begin{frame}
+\begin{center}
+\includegraphics[width=0.95\textwidth]{../images_yt_video/column_select.png}
+\end{center}
+\end{frame}
+
+%% Slide 12: Reading from Memory Cells
 \begin{frame}{Reading from Memory Cells}
-\textbf{Read Process:}
-\begin{enumerate}
-    \item CPU sends read command + 31-bit address
-    \item Select bank (5 bits)
-    \item Turn off all wordlines, precharge bitlines to 0.5V
-    \item Activate one wordline using 16-bit row address
-    \item Capacitors connect to bitlines:
-    \begin{itemize}
-        \item Stored 1: bitline voltage increases
-        \item Stored 0: bitline voltage decreases
-    \end{itemize}
-    \item Sense amplifiers detect and amplify voltage change
-    \item Drive bitlines to full 1V or 0V
-    \item Row now "open" with all 8,192 bitlines at correct values
-    \item Column multiplexer selects 8 bitlines (10-bit address)
-    \item Read driver transmits 8 bits to CPU
-\end{enumerate}
-
-% Placeholder for diagram illustrating read process
+\textbf{Process:}
+\begin{itemize}
+    \item CPU sends read command + address
+    \item Select bank, precharge bitlines to 0.5V
+    \item Activate wordline (one row)
+    \item Capacitors slightly change bitline voltage
+    \item Sense amplifiers amplify to full 1V or 0V
+    \item Column multiplexer selects 8 specific bits
+    \item Data transmitted to CPU
+\end{itemize}
 \end{frame}
 
-%% Slide 12: Writing to Memory Cells
+%% Slide 13: Read Process Diagram
+\begin{frame}
+\begin{center}
+\includegraphics[width=0.95\textwidth]{../images_yt_video/tRAS.png}
+\end{center}
+\end{frame}
+
+%% Slide 14: Writing to Memory Cells
 \begin{frame}{Writing to Memory Cells}
-\textbf{Write Process:}
-\begin{enumerate}
-    \item CPU sends write command + address + 8 data bits
-    \item Select bank (5 bits)
-    \item Isolate capacitors, precharge bitlines to 0.5V
-    \item Activate row (16-bit address)
-    \item Sense amplifiers open row
-    \item Column multiplexer connects 8 bitlines (10-bit address)
-    \item Write drivers override bitline voltages:
-    \begin{itemize}
-        \item 1V for binary 1
-        \item 0V for binary 0
-    \end{itemize}
-    \item New voltages update capacitor charges
-    \item 8 bits successfully written
-\end{enumerate}
+\textbf{Process:}
+\begin{itemize}
+    \item CPU sends write command + address + data
+    \item Select bank, precharge bitlines
+    \item Activate row, sense amplifiers open row
+    \item Column multiplexer selects 8 bitlines
+    \item Write drivers override voltages (1V or 0V)
+    \item Capacitors updated with new data
+\end{itemize}
 
-\vspace{0.2cm}
-\textbf{Note:} All 4 chips operate concurrently with same address but different data
-
-% Placeholder for diagram illustrating write process
+\vspace{0.5cm}
+\textbf{Note:} All 4 chips operate in parallel
 \end{frame}
 
-%% Slide 13: Refresh Operation
+\begin{frame}
+\begin{center}
+\includegraphics[width=0.95\textwidth]{../images_yt_video/tRAS_full.png}
+\end{center}
+\end{frame}
+
+%% Slide 15: Refresh Operation
 \begin{frame}{Refresh Operation}
 \textbf{Why Refresh:}
 \begin{itemize}
-    \item Nanoscale transistors leak electrons over time
-    \item Without refresh: data loss
+    \item Electrons leak through nanoscale transistors
+    \item Data loss prevention
 \end{itemize}
 
-\vspace{0.3cm}
-\textbf{Refresh Process:}
-\begin{enumerate}
-    \item Close all rows
-    \item Precharge bitlines to 0.5V
-    \item Open one row
-    \item Sense amplifiers restore full voltage (1V or 0V)
-    \item Repeat for each row
-\end{enumerate}
-
-\vspace{0.3cm}
-\textbf{Timing:}
+\vspace{0.5cm}
+\textbf{Process:}
 \begin{itemize}
-    \item 50 nanoseconds per row
-    \item $\sim$3 milliseconds for all 65,536 rows
-    \item Occurs every 64 milliseconds per bank
+    \item Precharge bitlines to 0.5V
+    \item Open one row at a time
+    \item Sense amplifiers restore full voltage
 \end{itemize}
 
-% Placeholder for diagram showing refresh cycle
+\vspace{0.5cm}
+\textbf{Timing:} 50ns per row, occurs every 64ms per bank
 \end{frame}
 
-%% Slide 14: Row Hits vs Row Misses
-\begin{frame}{Row Hits vs Row Misses}
-\textbf{Row Hit (Page Hit):}
+%% Slide 18: Timing Diagram
+\begin{frame}
+\begin{center}
+\includegraphics[width=0.95\textwidth]{../images_yt_video/timing_diagram.png}
+\end{center}
+\end{frame}
+
+%% Slide 16: Row Hits
+\begin{frame}{Row Hits (Page Hits)}
+\textbf{What is a Row Hit:}
 \begin{itemize}
-    \item Address in already-open row
-    \item Use only 10-bit column address
-    \item Much faster (skip row opening)
-    \item Can occur repeatedly
+    \item Next address is in already-open row
+    \item Use only column address (10 bits)
+    \item Skip row opening steps
 \end{itemize}
 
-\vspace{0.3cm}
-\textbf{Row Miss:}
+\vspace{0.5cm}
+\textbf{Benefits:}
 \begin{itemize}
-    \item Address in different row
+    \item Much faster access
+    \item Can occur repeatedly on same row
+    \item Systems optimized to maximize row hits
+\end{itemize}
+\end{frame}
+
+%% Slide 17: Row Misses
+\begin{frame}{Row Misses and Timing}
+\textbf{What is a Row Miss:}
+\begin{itemize}
+    \item Next address in different row
     \item Must close current row, open new row
-    \item Significantly slower
+    \item Significantly slower than row hit
 \end{itemize}
 
-\vspace{0.3cm}
+\vspace{0.5cm}
 \textbf{Timing Parameters (clock cycles):}
 \begin{itemize}
-    \item Row hit to data delivery
-    \item Row opening time
-    \item Precharge time
-    \item Row activation to precharge interval
+    \item CAS latency: row hit to data
+    \item RAS to CAS delay: row opening time
+    \item Row precharge time
+    \item Row active time
 \end{itemize}
-
-\vspace{0.2cm}
-Systems optimized to maximize row hits, avoid thrashing
-
-% Placeholder for diagram comparing row hit vs row miss timing
 \end{frame}
 
-%% Slide 15: Why 32 Banks?
-\begin{frame}{Why 32 Banks?}
-\textbf{Parallelism Benefits:}
+%% Slide 18: Timing Diagram
+\begin{frame}
+\begin{center}
+\includegraphics[width=1.0\textwidth]{../images_yt_video/row_misses_and_timing.png}
+\end{center}
+\end{frame}
+
+%% Slide 19: Multiple Banks - Parallelism
+\begin{frame}{Why Multiple Banks?}
+\textbf{Independent Operation:}
 \begin{itemize}
     \item Each bank operates independently
-    \item Multiple rows open simultaneously across banks
+    \item Multiple rows open across different banks
     \item Increases row hit probability
-    \item Reduces average access time
 \end{itemize}
 
-\vspace{0.3cm}
-\textbf{Bank Groups:}
+\vspace{0.5cm}
+\textbf{Performance Impact:}
 \begin{itemize}
-    \item 8 bank groups × 4 banks = 32 total
-    \item Refresh one bank per group while using others
-    \item Minimizes refresh impact
+    \item Reduced average access time
+    \item Better parallel processing
 \end{itemize}
-
-\vspace{0.3cm}
-\textbf{Array Efficiency:}
-\begin{itemize}
-    \item Banks are tall and narrow
-    \item Combined: 65,536 rows × 262,144 columns
-    \item 31 divisions create flexibility for operations
-\end{itemize}
-
-% Placeholder for diagram showing bank organization
 \end{frame}
 
-%% Slide 16: Burst Buffer Optimization
+%% Slide 20: Bank Groups
+\begin{frame}{Bank Groups Organization}
+\textbf{Structure:}
+\begin{itemize}
+    \item 8 bank groups × 4 banks = 32 total banks
+    \item Groups enable better refresh management
+\end{itemize}
+
+\vspace{0.5cm}
+\textbf{Refresh Optimization:}
+\begin{itemize}
+    \item Refresh one bank per group
+    \item Use other three banks during refresh
+    \item Minimizes performance impact
+\end{itemize}
+\end{frame}
+
+%% Slide 21: Burst Buffer Optimization
 \begin{frame}{Burst Buffer Optimization}
 \textbf{Design:}
 \begin{itemize}
     \item 128-bit temporary storage buffer
-    \item 10-bit column address split: 6 bits (mux) + 4 bits (buffer)
+    \item Column address split: 6 bits (mux) + 4 bits (buffer)
 \end{itemize}
 
-\vspace{0.3cm}
+\vspace{0.5cm}
 \textbf{Operation:}
 \begin{itemize}
-    \item 6 bits connect 128 cells to buffer
-    \item 4 bits select 8 data locations from buffer
-    \item Cycle through combinations: 16 sets × 8 bits
-    \item \textbf{Burst length = 16}
-    \item Total: 1,024 bits accessed quickly per chip
+    \item Load 128 cells into buffer using 6 bits
+    \item Select 8 data locations using 4 bits, cycle through 16 combinations
+    \item Result: 1,024 bits accessed quickly per chip (burst length = 16)
 \end{itemize}
 
-\vspace{0.3cm}
-\textbf{Benefits:}
-\begin{itemize}
-    \item Fast sequential data access
-    \item Maintains random access granularity
-\end{itemize}
-
-% Placeholder for diagram of burst buffer architecture
+\vspace{0.5cm}
+\textbf{Benefit:} Fast sequential access with random access capability
 \end{frame}
 
-%% Slide 17: Subarrays and Hierarchical Design
+%% Slide 22: Burst Buffer Diagram
+\begin{frame}
+\begin{center}
+\includegraphics[width=0.95\textwidth]{../images_yt_video/burst_buffers.png}
+\end{center}
+\end{frame}
+
+%% Slide 23: Subarrays and Hierarchical Design
 \begin{frame}{Subarrays and Hierarchical Design}
 \textbf{Challenge:}
 \begin{itemize}
@@ -415,11 +407,16 @@ Systems optimized to maximize row hits, avoid thrashing
     \item Faster transistor activation
     \item Improved performance
 \end{itemize}
-
-% Placeholder for diagram showing subarray organization
 \end{frame}
 
-%% Slide 18: Differential Pair and Folded Architecture
+%% Slide 24: Sense Amplifier Diagram
+\begin{frame}
+\begin{center}
+\includegraphics[width=0.95\textwidth]{../images_yt_video/sens_amp.png}
+\end{center}
+\end{frame}
+
+%% Slide 25: Differential Pair Architecture
 \begin{frame}{Differential Pair Architecture}
 \textbf{Design:}
 \begin{itemize}
@@ -444,40 +441,13 @@ Systems optimized to maximize row hits, avoid thrashing
     \item Noise immunity from opposite charges
     \item Reduced parasitic capacitance
 \end{enumerate}
-
-% Placeholder for diagram of differential pair architecture
 \end{frame}
 
-%% Slide 19: Conclusion
-\begin{frame}{Conclusion}
-\textbf{Key Concepts Covered:}
-\begin{itemize}
-    \item DRAM role in memory hierarchy
-    \item Internal structure: banks, arrays, cells
-    \item Core operations: read, write, refresh
-    \item Performance optimizations
-\end{itemize}
-
-\vspace{0.3cm}
-\textbf{DRAM Performance:}
-\begin{itemize}
-    \item 4.8 billion operations per second
-    \item 17 nanosecond access time
-    \item Continuous refresh (16 times/second per bank)
-\end{itemize}
-
-\vspace{0.3cm}
-\textbf{Significance:}
-\begin{itemize}
-    \item 3,000× faster than SSD access
-    \item Critical for modern computing performance
-    \item Enables efficient program execution
-\end{itemize}
-\end{frame}
-
+%% Slide 26: Inside Sense Amplifier
 \begin{frame}
-\centering
-\Huge Thank You!
+\begin{center}
+\includegraphics[width=0.95\textwidth]{../images_yt_video/inside_sens_amp.png}
+\end{center}
 \end{frame}
 
 \end{document}

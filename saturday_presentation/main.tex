@@ -1,0 +1,430 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}
+\usepackage{array}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
+
+% Theme & Colors
+\usetheme{Madrid}
+\usecolortheme{default}
+\definecolor{primary}{RGB}{6,90,130}
+\definecolor{accent}{RGB}{2,195,154}
+\definecolor{lightbg}{RGB}{240,248,255}
+
+\setbeamercolor{frametitle}{bg=primary, fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=accent}
+\setbeamercolor{structure}{fg=primary}
+\setbeamercolor{block title}{bg=primary, fg=white}
+\setbeamercolor{block body}{bg=lightbg}
+\setbeamerfont{frametitle}{size=\large, series=\bfseries}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+
+% Header with logo on every slide
+\setbeamertemplate{headline}{
+\begin{beamercolorbox}[wd=\paperwidth,ht=11.5ex,dp=1.5ex]{}
+\hfill
+\includegraphics[height=1cm]{images/chips_logo.png}
+\hspace{0.3cm}
+\end{beamercolorbox}
+}
+
+% TikZ Styles
+\tikzset{
+  block/.style={rectangle, rounded corners=4pt, draw=primary, thick,
+                fill=lightbg, text width=2.2cm, align=center,
+                minimum height=0.8cm, font=\small},
+  arrow/.style={-{Stealth[length=6pt]}, thick, color=primary},
+  highlight/.style={rectangle, rounded corners=4pt, draw=accent, very thick,
+                    fill=accent!10, text width=2.2cm, align=center,
+                    minimum height=0.8cm, font=\small\bfseries},
+}
+
+% Title Info
+\title{Memory Controller for DDR Memories}
+\author{
+Pranav M -- PES2UG23EC076\\
+Lalith -- PES2UG23EC074\\
+Harshini -- PES2UG23EC058
+}
+\date{}
+
+% ═══════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% Title Slide
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% Slide 1: Introduction & Problem Statement
+\begin{frame}{Introduction and Problem Statement}
+  \textbf{What is a Memory Controller?}
+  \begin{itemize}
+    \item Bridge between processor/SoC and DRAM
+    \item Manages read/write transactions, timing, refresh
+    \item Critical for system performance and power
+  \end{itemize}
+  \vspace{0.5cm}
+  \textbf{Our Goal:}\\
+  Design and implement a reconfigurable memory controller capable of supporting multiple DDR generations.
+\end{frame}
+
+% Slide 1b: Block Diagram (PNG from external)
+\begin{frame}{System Block Diagram}
+  \begin{center}
+    \includegraphics[width=0.6\textwidth]{images/block_diagram.png}
+  \end{center}
+\end{frame}
+
+% Slide 2: SDR vs DDR
+\begin{frame}{SDR vs DDR -- What Changed?}
+  \begin{columns}
+    \column{0.52\textwidth}
+      \begin{tikzpicture}
+        % SDR CLK
+        \draw[thick, primary] (0,5.8) node[left,font=\tiny]{SDR CLK}
+          -- (0,6.1) -- (0.5,6.1) -- (0.5,5.8)
+          -- (1.0,5.8) -- (1.0,6.1) -- (1.5,6.1) -- (1.5,5.8)
+          -- (2.0,5.8) -- (2.0,6.1) -- (2.5,6.1) -- (2.5,5.8)
+          -- (3.0,5.8) -- (3.0,6.1) -- (3.5,6.1) -- (3.5,5.8) -- (4.0,5.8);
+        \node[left, font=\tiny] at (-0.3,4.95) {Data};
+        \foreach \x/\lbl in {0/D0, 1.0/D1, 2.0/D2, 3.0/D3}{
+          \draw[dashed, gray, thin] (\x,5.1) -- (\x,5.85);
+          \node[font=\tiny, color=primary] at (\x,4.95) {\lbl};
+        }
+        \node[font=\tiny, color=gray] at (2.0,4.65) {sampled on rising edge only};
+
+        % DDR CLK
+        \draw[thick, primary] (0,3.5) node[left,font=\tiny]{DDR CLK}
+          -- (0,3.8) -- (0.5,3.8) -- (0.5,3.5)
+          -- (1.0,3.5) -- (1.0,3.8) -- (1.5,3.8) -- (1.5,3.5)
+          -- (2.0,3.5) -- (2.0,3.8) -- (2.5,3.8) -- (2.5,3.5)
+          -- (3.0,3.5) -- (3.0,3.8) -- (3.5,3.8) -- (3.5,3.5) -- (4.0,3.5);
+        \node[left, font=\tiny] at (-0.3,2.7) {Data};
+        \foreach \i/\lbl in {0/D0,1/D1,2/D2,3/D3,4/D4,5/D5,6/D6,7/D7}{
+          \draw[dashed, gray, thin] (0.5*\i,2.85) -- (0.5*\i,3.55);
+          \node[font=\tiny, color=primary] at (0.5*\i,2.7) {\lbl};
+        }
+        \node[font=\tiny, color=gray] at (2.0,2.45) {sampled on \textbf{both} edges};
+
+      \end{tikzpicture}
+
+    \column{0.4\textwidth}
+      \begin{block}{Key Differences}
+        \scriptsize
+        \begin{tabular}{lll}
+          \toprule
+          & \textbf{SDR} & \textbf{DDR} \\
+          \midrule
+          Transfer & Rising edge & Both edges \\
+          Bandwidth & 1$\times$ & 2$\times$ \\
+          Voltage & 3.3V & 2.5V / lower \\
+          Prefetch & 1n & 2n \\
+          \bottomrule
+        \end{tabular}
+      \end{block}
+  \end{columns}
+\end{frame}
+
+% Slide 3: DDR Generations
+\begin{frame}{DDR Generations -- Evolution}
+  \begin{center}
+  \begin{tikzpicture}[node distance=0.0cm]
+    \draw[arrow, line width=2pt] (0,0) -- (11,0);
+
+    \foreach \x/\gen/\speed/\volt in {
+      0.8/DDR1/100 MHz/2.5V,
+      2.8/DDR2/400 MHz/1.8V,
+      4.8/DDR3/1066 MHz/1.5V,
+      6.8/DDR4/1600 MHz/1.2V,
+      8.8/DDR5/3200 MHz/1.1V}{
+      \draw[thick, primary] (\x, -0.15) -- (\x, 0.15);
+      \node[above, font=\small\bfseries, color=primary] at (\x, 0.15) {\gen};
+      \node[below, font=\tiny] at (\x, -0.2) {\speed};
+      \node[below, font=\tiny, color=accent!80!black] at (\x, -0.5) {\volt};
+    }
+
+    \node[right, font=\tiny] at (11, 0) {time};
+  \end{tikzpicture}
+  \end{center}
+
+  \vspace{0.4cm}
+  \textbf{Each generation brought:}
+  \begin{itemize}
+    \item Higher clock frequencies and bandwidth
+    \item Lower operating voltage (power savings)
+    \item Improved prefetch depth (2n $\to$ 4n $\to$ 8n $\to$ 16n)
+    \item Key challenges as speeds increase: signal integrity, timing closure, power delivery, and clock domain crossing
+  \end{itemize}
+\end{frame}
+
+% Slide 4: LPDDR
+\begin{frame}{LPDDR -- Low Power DDR}
+  \begin{columns}
+    \column{0.5\textwidth}
+      \textbf{Requirements}
+      \begin{itemize}
+        \item High bandwidth
+        \item Low latency
+        \item Power efficient
+      \end{itemize}
+      \vspace{0.4cm}
+      \textbf{Advanced Power Management}
+      \begin{itemize}
+        \item Partial Array Self Refresh (PASR)
+        \item Temperature Compensated Self Refresh (TCSR)
+        \item Deep Power-Down (DPD)
+      \end{itemize}
+
+    \column{0.45\textwidth}
+      \begin{block}{LPDDR vs DDR}
+        \scriptsize
+        \begin{tabular}{lll}
+          \toprule
+          & \textbf{DDR5} & \textbf{LPDDR5} \\
+          \midrule
+          Voltage & 1.1V & 1.05V \\
+          Form factor & DIMM & PoP/BGA \\
+          Power modes & Basic & PASR/TCSR/DPD \\
+          \bottomrule
+        \end{tabular}
+      \end{block}
+  \end{columns}
+\end{frame}
+
+% Slide 5: Async FIFO -- Functionality
+\begin{frame}{Asynchronous FIFO -- Functionality}
+  \begin{columns}
+    \column{0.5\textwidth}
+      \textbf{The Problem: Clock Domain Crossing (CDC)}
+      \begin{itemize}
+        \item AXI clock $\neq$ PHY/memory clock
+        \item Direct signal passing causes metastability
+        \item Async FIFO safely transfers data between domains
+      \end{itemize}
+      \vspace{0.3cm}
+      \textbf{Key signals:}
+      \begin{itemize}
+        \item \texttt{wr\_clk}, \texttt{wr\_en}, \texttt{wr\_data}
+        \item \texttt{rd\_clk}, \texttt{rd\_en}, \texttt{rd\_data}
+        \item \texttt{full}, \texttt{empty} flags
+      \end{itemize}
+      \vspace{0.2cm}
+      Gray-coded pointers used for safe CDC of read/write pointers.
+
+    \column{0.46\textwidth}
+      \begin{tikzpicture}[node distance=0.5cm]
+        \node[block, fill=primary!20, text width=1.6cm] (wdom) {Write\\Domain\\(AXI clk)};
+        \node[block, right=0.8cm of wdom, fill=accent!20, text width=1.8cm,
+              minimum height=2cm] (mem) {FIFO\\Memory\\(Gray ptr)};
+        \node[block, right=0.8cm of mem, fill=primary!20, text width=1.6cm] (rdom) {Read\\Domain\\(PHY clk)};
+
+        \draw[arrow] (wdom) -- (mem) node[above, font=\tiny, midway]{wr};
+        \draw[arrow] (mem) -- (rdom) node[above, font=\tiny, midway]{rd};
+
+        \draw[-{Stealth}, thick, dashed, accent] (mem.north) -- ++(0,0.5)
+          node[above, font=\tiny]{full / empty flags};
+
+        \node[block, below=0.4cm of wdom, fill=gray!20, text width=1.6cm,
+              font=\tiny] (sync1) {2FF Sync\\(rd$\to$wr)};
+        \node[block, below=0.4cm of rdom, fill=gray!20, text width=1.6cm,
+              font=\tiny] (sync2) {2FF Sync\\(wr$\to$rd)};
+        \draw[-{Stealth}, thick, dashed, primary] (mem.south) -| (sync1);
+        \draw[-{Stealth}, thick, dashed, primary] (mem.south) -| (sync2);
+      \end{tikzpicture}
+  \end{columns}
+\end{frame}
+
+% Slide 6: Async FIFO -- Block Diagram
+\begin{frame}{Asynchronous FIFO -- Block Diagram}
+  \begin{center}
+  \begin{tikzpicture}[node distance=0.7cm and 1.2cm]
+    \node[font=\small] (wclk) at (-4, 2.5) {\texttt{wr\_clk}};
+    \node[font=\small] (wen)  at (-4, 1.5) {\texttt{wr\_en}};
+    \node[font=\small] (wdata)at (-4, 0.5) {\texttt{wr\_data[N]}};
+
+    \node[block, right=1.2cm of wen, minimum height=1.8cm, text width=2cm]
+      (wctrl) {Write\\Controller\\+ WPtr};
+
+    \node[block, right=1.2cm of wctrl, minimum height=2.5cm, text width=1.8cm,
+          fill=accent!15] (ram) {Dual-Port\\SRAM\\$2^K \times N$};
+
+    \node[block, right=1.2cm of ram, minimum height=1.8cm, text width=2cm]
+      (rctrl) {Read\\Controller\\+ RPtr};
+
+    \node[font=\small, right=1.2cm of rctrl, yshift=0.5cm]  (rdata) {\texttt{rd\_data[N]}};
+    \node[font=\small, right=1.2cm of rctrl, yshift=-0.5cm] (empty) {\texttt{empty}};
+    \node[font=\small, left=0.3cm of wctrl, yshift=-1.2cm]  (full)  {\texttt{full}};
+
+    \foreach \src/\dst in {wclk/wctrl, wen/wctrl, wdata/ram}{
+      \draw[arrow] (\src) -- (\dst);
+    }
+    \draw[arrow] (wctrl) -- (ram);
+    \draw[arrow] (ram)   -- (rctrl);
+    \draw[arrow] (rctrl) -- (rdata);
+    \draw[arrow] (rctrl) -- (empty);
+    \draw[arrow] (wctrl) -- (full);
+
+    \draw[-{Stealth}, dashed, thick, accent] (wctrl.south)
+      .. controls +(0,-0.8) and +(0,-0.8) .. (rctrl.south)
+      node[below, midway, font=\tiny]{Gray WPtr $\xrightarrow{\text{2FF sync}}$ rd\_clk domain};
+    \draw[-{Stealth}, dashed, thick, primary!60] (rctrl.north)
+      .. controls +(0,0.8) and +(0,0.8) .. (wctrl.north)
+      node[above, midway, font=\tiny]{Gray RPtr $\xrightarrow{\text{2FF sync}}$ wr\_clk domain};
+  \end{tikzpicture}
+  \end{center}
+\end{frame}
+
+% Slide 7: AXI -- Overview
+\begin{frame}{AXI Interface -- Overview}
+  \begin{columns}
+    \column{0.45\textwidth}
+      \textbf{Why AXI?}
+      \begin{itemize}
+        \item Industry standard (ARM AMBA)
+        \item Separate read and write channels
+        \item Burst transfers, out-of-order support
+        \item Decouples master from slave
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{5 Channels:}
+      \begin{itemize}
+        \item AW -- Write Address
+        \item W -- Write Data
+        \item B -- Write Response
+        \item AR -- Read Address
+        \item R -- Read Data
+      \end{itemize}
+
+    \column{0.5\textwidth}
+      \begin{tikzpicture}[node distance=0.3cm and 1.5cm]
+        \node[block, fill=primary!20, minimum height=3.5cm, text width=1.8cm]
+          (master) {AXI Master};
+        \node[block, fill=accent!20, minimum height=3.5cm, text width=1.8cm,
+              right=2.8cm of master] (slave) {AXI Slave};
+
+        % Write channels: master to slave (AW, W, B resp slave to master)
+        \foreach \y/\ch in {1.2/AW (addr), 0.5/W (data)}{
+          \draw[-{Stealth}, thick, color=primary]
+            ($(master.east)+(0,\y)$) -- ($(slave.west)+(0,\y)$)
+            node[midway, above, font=\tiny]{\ch};
+        }
+        \draw[-{Stealth}, thick, color=accent!80!black]
+          ($(slave.west)+(0,-0.2)$) -- ($(master.east)+(0,-0.2)$)
+          node[midway, above, font=\tiny]{B (resp)};
+        % Read channels
+        \draw[-{Stealth}, thick, color=primary]
+          ($(master.east)+(0,-0.9)$) -- ($(slave.west)+(0,-0.9)$)
+          node[midway, above, font=\tiny]{AR (addr)};
+        \draw[-{Stealth}, thick, color=accent!80!black]
+          ($(slave.west)+(0,-1.5)$) -- ($(master.east)+(0,-1.5)$)
+          node[midway, above, font=\tiny]{R (data)};
+      \end{tikzpicture}
+  \end{columns}
+\end{frame}
+
+% Slide 8: AXI -- Transaction Flow
+\begin{frame}{AXI -- Write and Read Transaction Flow}
+  \begin{columns}
+    \column{0.48\textwidth}
+      \textbf{Write Transaction}
+      \begin{center}
+      \begin{tikzpicture}[node distance=0.5cm]
+        \node[block, fill=primary!10, text width=3cm] (aw) {1. AW: Send address + burst info};
+        \node[block, below=of aw, fill=primary!10, text width=3cm] (w)  {2. W: Send data beats};
+        \node[block, below=of w,  fill=accent!10,  text width=3cm] (b)  {3. B: Receive write response};
+        \draw[arrow] (aw) -- (w);
+        \draw[arrow] (w)  -- (b);
+      \end{tikzpicture}
+      \end{center}
+
+    \column{0.48\textwidth}
+      \textbf{Read Transaction}
+      \begin{center}
+      \begin{tikzpicture}[node distance=0.5cm]
+        \node[block, fill=accent!10, text width=3cm] (ar) {1. AR: Send address + burst info};
+        \node[block, below=of ar, fill=accent!10, text width=3cm] (r)  {2. R: Receive data beats + RLAST};
+        \draw[arrow] (ar) -- (r);
+      \end{tikzpicture}
+      \end{center}
+      \vspace{0.5cm}
+      \textbf{Handshake:} Every channel uses \texttt{VALID}/\texttt{READY} handshake -- transfer occurs only when both are high.
+  \end{columns}
+\end{frame}
+
+% Slide 9: PHY Layer
+\begin{frame}{PHY Layer -- Physical Interface}
+  \begin{columns}
+    \column{0.5\textwidth}
+      \textbf{Role of PHY}
+      \begin{itemize}
+        \item Bridge between the memory controller and the memory
+        \item Temporarily stores instructions and data in buffers
+        \item Performs Write Leveling, DQS Gate Training and Vref Training
+      \end{itemize}
+
+    \column{0.45\textwidth}
+      \begin{tikzpicture}[node distance=0.6cm]
+        \node[block, fill=primary!20, text width=2.2cm] (ctrl) {Memory\\Controller};
+        \node[block, below=of ctrl, fill=accent!20, text width=2.2cm,
+              minimum height=1.5cm] (phy) {PHY};
+        \node[block, below=of phy, fill=gray!20, text width=2.2cm] (ddr) {DDR Memory};
+        \draw[arrow] (ctrl) -- (phy) node[midway, right, font=\tiny]{DFI};
+        \draw[arrow] (phy) -- (ddr) node[midway, right, font=\tiny]{DQ/DQS/CA};
+      \end{tikzpicture}
+  \end{columns}
+\end{frame}
+
+% Slide 10: DFI Interface
+\begin{frame}{DFI Interface}
+  \begin{columns}
+    \column{0.5\textwidth}
+      \textbf{What is DFI?}
+      \begin{itemize}
+        \item Acts as a universal language for PHY interoperability
+        \item Decouples the memory controller from PHY implementation
+      \end{itemize}
+      \vspace{0.4cm}
+      \textbf{Three Pillars of DFI 5.0/5.1}
+      \begin{itemize}
+        \item PHY independent boot sequence
+        \item Expanding frequency range support
+        \item New PHY-to-Controller Interface interaction
+      \end{itemize}
+
+    \column{0.45\textwidth}
+      \begin{tikzpicture}[node distance=0.6cm]
+        \node[block, fill=primary!20, text width=2.2cm] (ctrl) {Memory\\Controller};
+        \node[block, below=of ctrl, fill=accent!20, text width=2.2cm] (dfi) {DFI\\Interface};
+        \node[block, below=of dfi, fill=accent!10, text width=2.2cm,
+              minimum height=1.2cm] (phy) {PHY};
+        \node[block, below=of phy, fill=gray!20, text width=2.2cm] (ddr) {DDR Memory};
+        \draw[arrow] (ctrl) -- (dfi);
+        \draw[arrow] (dfi) -- (phy) node[midway, right, font=\tiny]{standard};
+        \draw[arrow] (phy) -- (ddr);
+        \node[right=0.2cm of dfi, font=\tiny, color=accent!80!black, align=left]
+          {universal\\protocol};
+      \end{tikzpicture}
+  \end{columns}
+\end{frame}
+
+% Slide 11: Next Steps
+\begin{frame}{Next Steps}
+  \begin{center}
+  \vspace{1cm}
+  \begin{tikzpicture}
+    \node[highlight, text width=3.8cm] (s1) {Async FIFO RTL\\{\small Done \cmark}};
+    \node[highlight, right=1cm of s1, text width=3.8cm] (s2) {Looking into DDR Memory\\{\small Done \cmark}};
+    \node[block, right=1cm of s2, text width=3.8cm] (s3) {Finalize\\Microarchitecture in\\{\small 1--2 weeks}};
+    \draw[arrow] (s1) -- (s2);
+    \draw[arrow] (s2) -- (s3);
+  \end{tikzpicture}
+  \end{center}
+\end{frame}
+
+\end{document}

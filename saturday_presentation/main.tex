@@ -47,6 +47,7 @@
 % Title Info
 \title{Memory Controller for DDR Memories}
 \author{
+\textbf{Project Guide:} Prof. Mahesh A\\[0.3cm]
 Pranav M -- PES2UG23EC076\\
 Lalith -- PES2UG23EC074\\
 Harshini -- PES2UG23EC058
@@ -71,7 +72,7 @@ Harshini -- PES2UG23EC058
   \end{itemize}
   \vspace{0.5cm}
   \textbf{Our Goal:}\\
-  Design and implement a reconfigurable memory controller capable of supporting multiple DDR generations.
+  Design and implement an RTL-level memory controller targeting DDR memories.
 \end{frame}
 
 % Slide 1b: Block Diagram (PNG from external)
@@ -79,6 +80,96 @@ Harshini -- PES2UG23EC058
   \begin{center}
     \includegraphics[width=0.6\textwidth]{images/block_diagram.png}
   \end{center}
+\end{frame}
+
+% Memory Controller Slide 1: Evolution
+\begin{frame}{Evolution of Memory Controller Placement}
+  \begin{columns}
+    \column{0.5\textwidth}
+      \textbf{Northbridge-based Controller}
+      \begin{itemize}
+        \item Controller in external chipset
+        \item Higher latency due to front-side bus
+      \end{itemize}
+      \vspace{0.3cm}
+      \textbf{Integrated Memory Controller}
+      \begin{itemize}
+        \item Controller moves onto CPU/SoC die
+        \item Simpler DRAM design, lower cost
+        \item Advanced scheduling, prefetching, power management
+      \end{itemize}
+
+    \column{0.45\textwidth}
+      \begin{center}
+        \includegraphics[width=\textwidth]{images/memory_controller.png}
+      \end{center}
+  \end{columns}
+\end{frame}
+
+% Memory Controller Slide 2: DRAM Controller Functions
+\begin{frame}{DRAM Controller Functions}
+  \begin{columns}
+    \column{0.5\textwidth}
+      \textbf{Correct Operation}
+      \begin{itemize}
+        \item Ensure refresh and timing constraints
+        \item Translate requests to DRAM commands
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Performance}
+      \begin{itemize}
+        \item Schedule requests for high throughput
+        \item Reordering and row-buffer management
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Power Management}
+      \begin{itemize}
+        \item Manage DRAM power modes and thermals
+      \end{itemize}
+
+    \column{0.45\textwidth}
+      \begin{block}{Why Complex Controllers?}
+        \scriptsize
+        \begin{itemize}
+          \item Reduces DRAM die area and DIMM cost
+          \item Centralizes protocol changes
+          \item Improves scalability across generations
+          \item Better performance-per-watt
+        \end{itemize}
+      \end{block}
+  \end{columns}
+\end{frame}
+
+% Memory Controller Slide 3: Timing Constraints
+\begin{frame}{Challenge -- Many DRAM Timing Constraints}
+  \textbf{DRAM has 50+ timing constraints that must be obeyed. Key examples:}
+  \vspace{0.2cm}
+  \begin{columns}
+    \column{0.55\textwidth}
+      \begin{block}{}
+        \scriptsize
+        \begin{tabular}{lp{5cm}}
+          \toprule
+          \textbf{Constraint} & \textbf{Description} \\
+          \midrule
+          tWTR & Min cycles before READ after WRITE \\
+          tRC  & Min cycles between consecutive ACTIVATEs to same bank \\
+          tRRD & Min cycles between ACTIVATEs to different banks \\
+          tFAW & Max 4 ACTIVATEs in a rolling time window \\
+          \bottomrule
+        \end{tabular}
+      \end{block}
+
+    \column{0.4\textwidth}
+      \textbf{Controller must track:}
+      \begin{itemize}
+        \item Channels, banks, ranks
+        \item Data bus, address bus
+        \item Row buffers
+        \item Refresh intervals
+        \item Power states
+      \end{itemize}
+  \end{columns}
 \end{frame}
 
 % Slide 2: SDR vs DDR
@@ -163,6 +254,27 @@ Harshini -- PES2UG23EC058
   \end{itemize}
 \end{frame}
 
+% DDR Timing Diagram 1: Write
+\begin{frame}{DDR Timing -- Write}
+  \begin{center}
+    \includegraphics[width=0.92\textwidth]{images/ddr_write.png}
+  \end{center}
+\end{frame}
+
+% DDR Timing Diagram 2: Read
+\begin{frame}{DDR Timing -- Read}
+  \begin{center}
+    \includegraphics[width=0.8\textwidth]{images/ddr_read.png}
+  \end{center}
+\end{frame}
+
+% DDR Timing Diagram 3: Read Burst
+\begin{frame}{DDR Timing -- Read Burst}
+  \begin{center}
+    \includegraphics[width=0.92\textwidth]{images/ddr_read_burst.png}
+  \end{center}
+\end{frame}
+
 % Slide 4: LPDDR
 \begin{frame}{LPDDR -- Low Power DDR}
   \begin{columns}
@@ -197,45 +309,66 @@ Harshini -- PES2UG23EC058
   \end{columns}
 \end{frame}
 
+
 % Slide 5: Async FIFO -- Functionality
 \begin{frame}{Asynchronous FIFO -- Functionality}
   \begin{columns}
-    \column{0.5\textwidth}
-      \textbf{The Problem: Clock Domain Crossing (CDC)}
+    \column{0.48\textwidth}
+      \textbf{Clock Domain Crossing (CDC)}
       \begin{itemize}
         \item AXI clock $\neq$ PHY/memory clock
         \item Direct signal passing causes metastability
-        \item Async FIFO safely transfers data between domains
+        \item Async FIFO safely bridges the two domains
       \end{itemize}
       \vspace{0.3cm}
-      \textbf{Key signals:}
+      \textbf{Our Implementation}
       \begin{itemize}
-        \item \texttt{wr\_clk}, \texttt{wr\_en}, \texttt{wr\_data}
-        \item \texttt{rd\_clk}, \texttt{rd\_en}, \texttt{rd\_data}
-        \item \texttt{full}, \texttt{empty} flags
+        \item Parameterizable depth and width
+        \item Gray-coded pointers for safe CDC
+        \item 2-FF synchronizer (\texttt{cdc\_sync}) module
+        \item Credit-based flow control
       \end{itemize}
-      \vspace{0.2cm}
-      Gray-coded pointers used for safe CDC of read/write pointers.
 
-    \column{0.46\textwidth}
+    \column{0.48\textwidth}
       \begin{tikzpicture}[node distance=0.5cm]
-        \node[block, fill=primary!20, text width=1.6cm] (wdom) {Write\\Domain\\(AXI clk)};
-        \node[block, right=0.8cm of wdom, fill=accent!20, text width=1.8cm,
-              minimum height=2cm] (mem) {FIFO\\Memory\\(Gray ptr)};
-        \node[block, right=0.8cm of mem, fill=primary!20, text width=1.6cm] (rdom) {Read\\Domain\\(PHY clk)};
+        % Write domain box
+        \node[rectangle, draw=primary, thick, fill=primary!10,
+              minimum width=2.0cm, minimum height=4.2cm,
+              label={[font=\tiny\bfseries, color=primary]above:Write Domain}]
+              (wd) at (0,0) {};
+        \node[font=\tiny, align=center] at (0, 0.8) {\texttt{wr\_ptr}\\(Gray)};
+        \node[font=\tiny, align=center] at (0, 0.0) {FIFO\\Memory};
+        \node[font=\tiny, align=center] at (0,-0.8) {\texttt{credit}\\toggle};
 
-        \draw[arrow] (wdom) -- (mem) node[above, font=\tiny, midway]{wr};
-        \draw[arrow] (mem) -- (rdom) node[above, font=\tiny, midway]{rd};
+        % Read domain box
+        \node[rectangle, draw=accent, thick, fill=accent!10,
+              minimum width=2.0cm, minimum height=4.2cm,
+              label={[font=\tiny\bfseries, color=accent!80!black]above:Read Domain}]
+              (rd) at (4.0,0) {};
+        \node[font=\tiny, align=center] at (4.0, 0.4) {\texttt{rd\_ptr}\\(Gray)};
+        \node[font=\tiny, align=center] at (4.0,-0.4) {consumer\\logic};
 
-        \draw[-{Stealth}, thick, dashed, accent] (mem.north) -- ++(0,0.5)
-          node[above, font=\tiny]{full / empty flags};
+        % Path 1: wr_ptr → rd domain
+        \draw[-{Stealth}, thick, color=primary]
+          (1.0, 0.8) -- (3.0, 0.8)
+          node[midway, above, font=\tiny]{\texttt{wr\_ptr\_gray}};
+        \node[font=\tiny, color=gray] at (2.0, 0.55) {2FF sync};
 
-        \node[block, below=0.4cm of wdom, fill=gray!20, text width=1.6cm,
-              font=\tiny] (sync1) {2FF Sync\\(rd$\to$wr)};
-        \node[block, below=0.4cm of rdom, fill=gray!20, text width=1.6cm,
-              font=\tiny] (sync2) {2FF Sync\\(wr$\to$rd)};
-        \draw[-{Stealth}, thick, dashed, primary] (mem.south) -| (sync1);
-        \draw[-{Stealth}, thick, dashed, primary] (mem.south) -| (sync2);
+        % Path 2: rd_ptr → wr domain
+        \draw[-{Stealth}, thick, color=accent!80!black]
+          (3.0, 0.1) -- (1.0, 0.1)
+          node[midway, above, font=\tiny]{\texttt{rd\_ptr\_gray}};
+        \node[font=\tiny, color=gray] at (2.0,-0.15) {2FF sync};
+
+        % Path 3: credit toggle → wr domain
+        \draw[-{Stealth}, thick, color=accent!60!primary]
+          (3.0,-0.7) -- (1.0,-0.7)
+          node[midway, above, font=\tiny]{credit toggle};
+        \node[font=\tiny, color=gray] at (2.0,-0.95) {2FF sync};
+
+        % Clock labels at bottom
+        \node[font=\tiny, color=primary, below=0.7cm of wd] {\texttt{wr\_clk}};
+        \node[font=\tiny, color=accent!80!black, below=0.7cm of rd] {\texttt{rd\_clk}};
       \end{tikzpicture}
   \end{columns}
 \end{frame}
@@ -243,40 +376,7 @@ Harshini -- PES2UG23EC058
 % Slide 6: Async FIFO -- Block Diagram
 \begin{frame}{Asynchronous FIFO -- Block Diagram}
   \begin{center}
-  \begin{tikzpicture}[node distance=0.7cm and 1.2cm]
-    \node[font=\small] (wclk) at (-4, 2.5) {\texttt{wr\_clk}};
-    \node[font=\small] (wen)  at (-4, 1.5) {\texttt{wr\_en}};
-    \node[font=\small] (wdata)at (-4, 0.5) {\texttt{wr\_data[N]}};
-
-    \node[block, right=1.2cm of wen, minimum height=1.8cm, text width=2cm]
-      (wctrl) {Write\\Controller\\+ WPtr};
-
-    \node[block, right=1.2cm of wctrl, minimum height=2.5cm, text width=1.8cm,
-          fill=accent!15] (ram) {Dual-Port\\SRAM\\$2^K \times N$};
-
-    \node[block, right=1.2cm of ram, minimum height=1.8cm, text width=2cm]
-      (rctrl) {Read\\Controller\\+ RPtr};
-
-    \node[font=\small, right=1.2cm of rctrl, yshift=0.5cm]  (rdata) {\texttt{rd\_data[N]}};
-    \node[font=\small, right=1.2cm of rctrl, yshift=-0.5cm] (empty) {\texttt{empty}};
-    \node[font=\small, left=0.3cm of wctrl, yshift=-1.2cm]  (full)  {\texttt{full}};
-
-    \foreach \src/\dst in {wclk/wctrl, wen/wctrl, wdata/ram}{
-      \draw[arrow] (\src) -- (\dst);
-    }
-    \draw[arrow] (wctrl) -- (ram);
-    \draw[arrow] (ram)   -- (rctrl);
-    \draw[arrow] (rctrl) -- (rdata);
-    \draw[arrow] (rctrl) -- (empty);
-    \draw[arrow] (wctrl) -- (full);
-
-    \draw[-{Stealth}, dashed, thick, accent] (wctrl.south)
-      .. controls +(0,-0.8) and +(0,-0.8) .. (rctrl.south)
-      node[below, midway, font=\tiny]{Gray WPtr $\xrightarrow{\text{2FF sync}}$ rd\_clk domain};
-    \draw[-{Stealth}, dashed, thick, primary!60] (rctrl.north)
-      .. controls +(0,0.8) and +(0,0.8) .. (wctrl.north)
-      node[above, midway, font=\tiny]{Gray RPtr $\xrightarrow{\text{2FF sync}}$ wr\_clk domain};
-  \end{tikzpicture}
+    \includegraphics[width=0.85\textwidth]{images/fifo_block.png}
   \end{center}
 \end{frame}
 
@@ -308,7 +408,7 @@ Harshini -- PES2UG23EC058
         \node[block, fill=accent!20, minimum height=3.5cm, text width=1.8cm,
               right=2.8cm of master] (slave) {AXI Slave};
 
-        % Write channels: master to slave (AW, W, B resp slave to master)
+        % Write channels
         \foreach \y/\ch in {1.2/AW (addr), 0.5/W (data)}{
           \draw[-{Stealth}, thick, color=primary]
             ($(master.east)+(0,\y)$) -- ($(slave.west)+(0,\y)$)
@@ -357,7 +457,40 @@ Harshini -- PES2UG23EC058
   \end{columns}
 \end{frame}
 
-% Slide 9: PHY Layer
+% Slide 8b: Why AXI is Perfect for DDR
+\begin{frame}{Why AXI is Perfect for DDR Memory Controllers}
+  \begin{center}
+  \begin{tikzpicture}[node distance=0.8cm, scale=0.9, every node/.style={transform shape}]
+    \node[rectangle, rounded corners=4pt, draw=primary, thick, fill=primary!15,
+          text width=3.2cm, align=center, font=\small] (lat)
+          {\textbf{DDR:} High latency\\(30--40ns)};
+    \node[below=of lat, rectangle, rounded corners=4pt, draw=primary, thick,
+          fill=primary!15, text width=3.2cm, align=center, font=\small] (burst)
+          {\textbf{DDR:} Fast burst\\after activate};
+    \node[below=of burst, rectangle, rounded corners=4pt, draw=primary, thick,
+          fill=primary!15, text width=3.2cm, align=center, font=\small] (bank)
+          {\textbf{DDR:} Multiple\\banks parallel};
+
+    \node[right=4.5cm of lat, rectangle, rounded corners=4pt, draw=accent, thick,
+          fill=accent!15, text width=3.5cm, align=center, font=\small] (sol1)
+          {\textbf{AXI:} Out-of-order\\hides latency};
+    \node[below=of sol1, rectangle, rounded corners=4pt, draw=accent, thick,
+          fill=accent!15, text width=3.5cm, align=center, font=\small] (sol2)
+          {\textbf{AXI:} Bursts match\\DDR prefetch};
+    \node[below=of sol2, rectangle, rounded corners=4pt, draw=accent, thick,
+          fill=accent!15, text width=3.5cm, align=center, font=\small] (sol3)
+          {\textbf{AXI:} IDs enable\\parallelism};
+
+    \draw[-{Stealth}, ultra thick, color=primary] (lat.east) -- (sol1.west);
+    \draw[-{Stealth}, ultra thick, color=primary] (burst.east) -- (sol2.west);
+    \draw[-{Stealth}, ultra thick, color=primary] (bank.east) -- (sol3.west);
+  \end{tikzpicture}
+  \end{center}
+  \vspace{0.2cm}
+  \begin{center}
+    \textcolor{primary}{\textbf{Perfect match between protocol and memory!}}
+  \end{center}
+\end{frame}
 \begin{frame}{PHY Layer -- Physical Interface}
   \begin{columns}
     \column{0.5\textwidth}
@@ -383,11 +516,11 @@ Harshini -- PES2UG23EC058
 % Slide 10: DFI Interface
 \begin{frame}{DFI Interface}
   \begin{columns}
-    \column{0.5\textwidth}
+    \column{0.55\textwidth}
       \textbf{What is DFI?}
       \begin{itemize}
-        \item Acts as a universal language for PHY interoperability
-        \item Decouples the memory controller from PHY implementation
+        \item Universal language for PHY interoperability
+        \item Decouples memory controller from PHY implementation
       \end{itemize}
       \vspace{0.4cm}
       \textbf{Three Pillars of DFI 5.0/5.1}
@@ -397,19 +530,10 @@ Harshini -- PES2UG23EC058
         \item New PHY-to-Controller Interface interaction
       \end{itemize}
 
-    \column{0.45\textwidth}
-      \begin{tikzpicture}[node distance=0.6cm]
-        \node[block, fill=primary!20, text width=2.2cm] (ctrl) {Memory\\Controller};
-        \node[block, below=of ctrl, fill=accent!20, text width=2.2cm] (dfi) {DFI\\Interface};
-        \node[block, below=of dfi, fill=accent!10, text width=2.2cm,
-              minimum height=1.2cm] (phy) {PHY};
-        \node[block, below=of phy, fill=gray!20, text width=2.2cm] (ddr) {DDR Memory};
-        \draw[arrow] (ctrl) -- (dfi);
-        \draw[arrow] (dfi) -- (phy) node[midway, right, font=\tiny]{standard};
-        \draw[arrow] (phy) -- (ddr);
-        \node[right=0.2cm of dfi, font=\tiny, color=accent!80!black, align=left]
-          {universal\\protocol};
-      \end{tikzpicture}
+    \column{0.4\textwidth}
+      \begin{center}
+        \includegraphics[width=0.8\textwidth]{images/ddr_phy.png}
+      \end{center}
   \end{columns}
 \end{frame}
 
@@ -420,7 +544,7 @@ Harshini -- PES2UG23EC058
   \begin{tikzpicture}
     \node[highlight, text width=3.8cm] (s1) {Async FIFO RTL\\{\small Done \cmark}};
     \node[highlight, right=1cm of s1, text width=3.8cm] (s2) {Looking into DDR Memory\\{\small Done \cmark}};
-    \node[block, right=1cm of s2, text width=3.8cm] (s3) {Finalize\\Microarchitecture in\\{\small 1--2 weeks}};
+    \node[block, right=1cm of s2, text width=3.8cm] (s3) {Finalize\\Microarchitecture\\{\small 1--2 weeks}};
     \draw[arrow] (s1) -- (s2);
     \draw[arrow] (s2) -- (s3);
   \end{tikzpicture}

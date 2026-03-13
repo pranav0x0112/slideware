@@ -297,14 +297,17 @@
     \fill[ddrblue!70,rounded corners=2pt] (0.2,0.65) rectangle (1.4,1.55);
     \node[white,font=\tiny\bfseries,align=center] at (0.80,1.10) {SoC\\PHY};
 
-    \fill[ddrteal!70,rounded corners=2pt] (5.0,0.65) rectangle (6.2,1.55);
-    \node[white,font=\tiny\bfseries] at (5.60,1.10) {DRAM};
+    \fill[ddrteal!70,rounded corners=2pt] (4.6,0.65) rectangle (5.6,1.55);
+    \node[white,font=\tiny\bfseries] at (5.10,1.10) {DRAM};
 
     \foreach \y/\col in {0.80/ddrblue, 0.99/ddrgreen, 1.18/ddrred, 1.37/violet}{
-      \draw[\col,thick] (1.4,\y) -- (5.0,\y);
+      \draw[\col,thick] (1.4,\y) -- (4.6,\y);
+      \fill[\col] (4.6,\y) circle (1.5pt);
     }
     \draw[{Stealth[length=3pt]}-{Stealth[length=3pt]},ddrred,thick]
-         (5.15,0.80) -- node[right,font=\tiny,ddrred]{$W_\delta$} (5.15,1.37);
+         (5.85,0.80) -- node[right,font=\tiny,ddrred]{$W_\delta$} (5.85,1.37);
+    \draw[ddrred,dashed,thin] (4.6,0.80) -- (6.05,0.80);
+    \draw[ddrred,dashed,thin] (4.6,1.37) -- (6.05,1.37);
     \node[font=\tiny,ddrgray] at (3.2,0.25) {$\sim$170\,ps per 30\,mm on FR4};
   \end{tikzpicture}
 

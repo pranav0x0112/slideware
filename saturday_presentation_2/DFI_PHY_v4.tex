@@ -131,7 +131,7 @@
           node[right,font=\tiny,ddrgray]{time};
 
     \foreach \gen/\speed/\vdd/\col/\x in {
-      DDR1/{200 MT/s}/{2.5V}/ddrblue/0,
+      DDR1/{400 MT/s}/{2.5V}/ddrblue/0,
       DDR2/{800 MT/s}/{1.8V}/ddrteal/2.0,
       DDR3/{1600 MT/s}/{1.5V}/ddrgreen/4.0,
       DDR4/{3200 MT/s}/{1.2V}/ddrgold/6.0,
@@ -438,7 +438,7 @@
     1.0 & Initial spec          & DDR, DDR2\\
     2.0 & Training interface    & DDR3, LPDDR2\\
     3.0 & Low-power handshake   & DDR4, LPDDR4\\
-    4.0 & DDR5 read/write paths & DDR5\\
+    4.0 & DDR4/LPDDR4 paths & DDR4, LPDDR4\\
     5.0 & PHY-independent boot  & DDR5, LPDDR5\\
     \rowcolor{ddrgold!30}
     \textbf{5.1} & \textbf{Full back-compat} & \textbf{All gens}\\

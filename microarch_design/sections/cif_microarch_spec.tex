@@ -35,8 +35,8 @@ The Controller Interface (CIF) is the AXI-facing front-end of the memory subsyst
 \texttt{N\_AW}           & 128   & AW Metadata FIFO depth ($= 4 \times \texttt{N\_CLIENTS}$). \\
 \texttt{N\_W}            & 64    & W Data FIFO depth. \\
 \texttt{N\_PKT}          & 64    & Packet FIFO depth (read and write). \\
-\texttt{MC\_RD\_BUF}     & 64    & MC Core internal read buffer depth. Defines ROB depth. \\
-\texttt{ROB\_WATERMARK}  & 26    & MC-side watermark for backpressure signalling. \\
+\texttt{MC\_RD\_BUF}     & 100    & MC Core internal read buffer depth. Defines ROB depth. \\
+\texttt{ROB\_WATERMARK}  & 128    & MC-side watermark for backpressure signalling. \\
 \texttt{MAX\_OUTSTANDING}& 4     & Maximum outstanding transactions per AXID. \\
 \texttt{N\_CLIENTS}      & 32    & AXI client count. Fixed at compile time (max 32). \\
 \midrule

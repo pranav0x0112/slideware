@@ -65,10 +65,10 @@ The Reorder Buffer (ROB) absorbs out-of-order read completions from MC Core and 
 
 \subsection{ROB BRAM}
 \begin{itemize}[noitemsep]
-  \item Dual-port BRAM, 64 $\times$ 517 bits per slot: \texttt{valid[0], data[511:0], status[3:0]}.
+  \item Dual-port BRAM, 256 $\times$ 517 bits per slot: \texttt{valid[0], data[511:0], status[3:0]}.
   \item Write port: Completion Input writes \texttt{data}, \texttt{status}, \texttt{valid=1} at \texttt{slot\_idx}.
   \item Write port (init): Free List writes \texttt{valid=0} at \texttt{free\_slot\_idx} on allocation.
-  \item Read port: Head Pointer Array supplies \texttt{head[AXID]} as read address; all 64 head slots checked in parallel each cycle.
+  \item Read port: Head Pointer Array supplies \texttt{head[AXID]} as read address; all 256 head slots checked in parallel each cycle.
   \item 1-cycle read latency — Emit Logic must account for this in its valid check timing.
 \end{itemize}
 

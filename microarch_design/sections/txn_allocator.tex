@@ -39,7 +39,7 @@ txn_tag[7:0]:
 \texttt{SEQNUM\_W}         & 2   & Seqnum width (\(\log_2\) MAX\_OUTSTANDING) \\
 \texttt{TXN\_TAG\_W}       & 8   & Tag width = AXID\_W + SEQNUM\_W \\
 \texttt{N\_AXIDS}          & 64  & Total AXID space ($2^6$) \\
-\texttt{OCC\_CTR\_W}       & 2   & Occupancy counter width per AXID \\
+\texttt{OCC\_CTR\_W}       & 3   & Occupancy counter width per AXID \\
 \bottomrule
 \end{tabular}
 \caption{Transaction Tag Allocator parameters}
@@ -51,7 +51,7 @@ txn_tag[7:0]:
 \subsection{Occupancy Counter Array}
 
 \begin{itemize}
-  \item \textbf{Structure:} 64 independent 2-bit saturating counters,
+  \item \textbf{Structure:} 64 independent 3-bit saturating counters,
         one per AXID.
   \item \textbf{Increment:} On every successful allocation
         (\texttt{alloc\_en} asserted), the counter for the requesting

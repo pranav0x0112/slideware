@@ -40,7 +40,7 @@ The Reorder Buffer (ROB) absorbs out-of-order read completions from MC Core and 
 
 \subsection{Free List}
 \begin{itemize}[noitemsep]
-  \item 64-bit bitmask. \texttt{1 = free}, \texttt{0 = occupied}.
+  \item 256-bit bitmask. \texttt{1 = free}, \texttt{0 = occupied}.
   \item Allocate: priority encoder selects lowest free bit, clears it, outputs \texttt{free\_slot\_idx[5:0]}.
   \item Free: Emit Logic sets the bit at \texttt{slot\_idx} via \texttt{free\_req}.
   \item Outputs \texttt{free\_slot\_idx} to Lookup Table (write), ROB BRAM (init), and Head Pointer Array (first allocation).
@@ -48,7 +48,7 @@ The Reorder Buffer (ROB) absorbs out-of-order read completions from MC Core and 
 
 \subsection{Occupancy Counter}
 \begin{itemize}[noitemsep]
-  \item Up/down counter, range 0--64.
+  \item Up/down counter, range 0--256.
   \item Incremented by \texttt{alloc\_req} from Free List.
   \item Decremented by \texttt{free\_req} from Emit Logic.
   \item Asserts \texttt{watermark\_hit} when count $\geq$ \texttt{ROB\_DEPTH} $-$ \texttt{ROB\_WATERMARK} $= 128$.
@@ -89,7 +89,7 @@ The Reorder Buffer (ROB) absorbs out-of-order read completions from MC Core and 
 
 \subsection{Head Pointer Array}
 \begin{itemize}[noitemsep]
-  \item 64 registers of 6 bits each, one per AXID. Stores slot index of next expected beat.
+  \item 64 registers of 8 bits each, one per AXID. Stores slot index of next expected beat.
   \item Written on first allocation only: \texttt{head[AXID] = free\_slot\_idx} when the
         AXID has no in-flight slots (occupancy transitions 0\textrightarrow{}1 for that AXID).
         On subsequent allocations for the same AXID, \texttt{head[AXID]} is \emph{not} updated

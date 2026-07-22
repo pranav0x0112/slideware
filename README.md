@@ -1,2 +1,2 @@
 # slideware
-All Capstone docs in one place.
+All Capstone docs in one placeeee.

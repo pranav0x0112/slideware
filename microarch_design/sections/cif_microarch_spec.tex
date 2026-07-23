@@ -64,7 +64,7 @@ Captures and buffers incoming AW channel metadata: \texttt{AWADDR}, \texttt{AWLE
 Captures and buffers AXI write data beats: \texttt{WDATA}, \texttt{WSTRB}, \texttt{WLAST}. Operates independently of the AW channel. W beats flow in freely regardless of AW validation status.
 
 \textbf{Request Validator.}
-Pops entries from the AW Metadata FIFO and performs address legality checks combinationally:
+Pops entries from the AW Metadata FIFO and performs address legality checks by comparing the incoming address against the physical address range stored in its Configuration Register.
 \begin{itemize}[noitemsep]
     \item Address range validation.
 \end{itemize}
@@ -163,7 +163,7 @@ The read path accepts AXI read transactions on the AR channel, validates them, s
 Captures and buffers incoming AR channel metadata: \texttt{ARADDR}, \texttt{ARLEN}, \texttt{ARSIZE}, \texttt{ARBURST}, \texttt{ARID}. Decouples AXI request arrival from downstream processing. Each AXI client is statically allocated 4 slots. \texttt{ARREADY} is driven low when no slots are available for the requesting client.
 
 \textbf{Request Validator.}
-Performs address legality checks only. Protocol-level constraints are enforced as design-time assertions and are not checked at runtime. Valid requests proceed to the Transaction Tag Allocator. Address errors are forwarded to the Error Handler with \texttt{ARID} preserved.
+performs address legality checks by comparing the incoming address against the physical address range stored in its Configuration Register only. Protocol-level constraints are enforced as design-time assertions and are not checked at runtime. Valid requests proceed to the Transaction Tag Allocator. Address errors are forwarded to the Error Handler with \texttt{ARID} preserved.
 
 \textbf{Transaction Tag Allocator.}
 Shared across all \texttt{N\_CLIENTS} AXI clients. Same encoding as the write path:

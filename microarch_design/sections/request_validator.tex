@@ -7,8 +7,8 @@ Metadata FIFO, performs a single runtime check (address range
 validation), and steers the transaction to one of two downstream paths:
 
 \begin{itemize}
-  \item \textbf{Valid path:} Transaction forwarded to the Transaction
-        Tag Allocator with \texttt{REQ\_VALID} asserted.
+  \item \textbf{Valid path:} Transaction forwarded to ROB allocation
+        with \texttt{REQ\_VALID} asserted.
   \item \textbf{Error path:} Transaction forwarded to the Error Handler
         with \texttt{ERR\_VALID} asserted and \texttt{AXID} preserved.
 \end{itemize}
@@ -65,8 +65,8 @@ Represents the only persistent state within the Request Validator.
   \item \textbf{Function:} Routes the transaction to the correct
         downstream block based on \texttt{addr\_ok}.
   \item \textbf{Valid path} (\texttt{addr\_ok == 1}): asserts
-        \texttt{REQ\_VALID} to the Tag Allocator; forwards
-        \texttt{AXID[5:0]} and \texttt{ARLEN/AWLEN[7:0]}.
+        \texttt{REQ\_VALID} to ROB allocation; forwards
+        \texttt{AXID[5:0]}.
   \item \textbf{Error path} (\texttt{addr\_ok == 0}): asserts
         \texttt{ERR\_VALID} to the Error Handler; forwards
         \texttt{AXID[5:0]}.
@@ -86,7 +86,7 @@ Represents the only persistent state within the Request Validator.
 \texttt{ADDR[31:0]}        & 32 & AR/AW Metadata FIFO & Transaction address \\
 \texttt{AXID[5:0]}         & 6  & AR/AW Metadata FIFO & AXI ID \\
 \texttt{ARLEN/AWLEN[7:0]}  & 8  & AR/AW Metadata FIFO & Burst length \\
-\texttt{STALL}             & 1  & Tag Allocator       & Per-AXID stall; holds output until deasserted \\
+\texttt{STALL}             & 1  & ROB Allocation      & Per-AXID stall; holds output until deasserted \\
 \bottomrule
 \caption{Request Validator input signals}
 \end{longtable}
@@ -97,11 +97,10 @@ Represents the only persistent state within the Request Validator.
 \toprule
 \textbf{Signal} & \textbf{Width} & \textbf{Destination} & \textbf{Description} \\
 \midrule
-\texttt{REQ\_VALID}       & 1 & Tag Allocator & Valid transaction request \\
-\texttt{AXID[5:0]}        & 6 & Tag Allocator & Forwarded AXI ID \\
-\texttt{ARLEN/AWLEN[7:0]} & 8 & Tag Allocator & Forwarded burst length \\
+\texttt{REQ\_VALID}       & 1 & ROB allocation & Valid transaction request \\
+\texttt{AXID[5:0]}        & 6 & ROB allocation & Forwarded AXI ID \\
 \texttt{ERR\_VALID}       & 1 & Error Handler & Address error notification \\
-\texttt{AXID[5:0]}        & 6 & Error Handler & AXI ID preserved for NOP tag allocation \\
+\texttt{AXID[5:0]}        & 6 & Error Handler & AXI ID preserved for error-response handling \\
 \bottomrule
 \caption{Request Validator output signals}
 \end{longtable}
@@ -115,13 +114,13 @@ Represents the only persistent state within the Request Validator.
         \texttt{ARLEN/AWLEN[7:0]}.
   \item Address Range Check compares the incoming address against the physical address range stored in the Configuration Register and evaluates \texttt{addr\_ok} combinationally.
   \item If \texttt{addr\_ok == 1} and \texttt{STALL} is deasserted:
-        Output Mux asserts \texttt{REQ\_VALID} to the Tag Allocator
-        with \texttt{AXID} and \texttt{ARLEN/AWLEN}.
+        Output Mux asserts \texttt{REQ\_VALID} to ROB allocation
+        with \texttt{AXID}.
   \item If \texttt{addr\_ok == 0}: Output Mux asserts \texttt{ERR\_VALID}
         to the Error Handler with \texttt{AXID}. The Error Handler sets
         \texttt{pkt\_type = Err\_write / Err\_read} and injects the
-        transaction into the normal pipeline via the Tag Allocator.
-  \item If \texttt{STALL} is asserted (Tag Allocator full for this
+        transaction into the normal pipeline via ROB allocation.
+  \item If \texttt{STALL} is asserted (ROB Allocation unavailable for this
         AXID): the Request Validator holds its outputs stable and does
         not pop the next FIFO entry until \texttt{STALL} deasserts.
 \end{enumerate}
@@ -133,12 +132,12 @@ Represents the only persistent state within the Request Validator.
   \item Fully combinational. Output (\texttt{REQ\_VALID} or
         \texttt{ERR\_VALID}) is valid in the same cycle as the FIFO
         head entry is presented.
-  \item \texttt{STALL} from the Tag Allocator is also combinational —
+  \item \texttt{STALL} from ROB allocation is also combinational —
         the combined path (FIFO output → Address Range Check → Output
-        Mux → Tag Allocator Stall Logic → STALL back) is a
+        Mux → ROB Allocation Stall Logic → STALL back) is a
         combinational loop that must be timed carefully. A register
         stage may be inserted between the Request Validator output and
-        the Tag Allocator input if timing closure requires it, at the
+        the ROB Allocation if timing closure requires it, at the
         cost of one cycle of allocation latency.
   \item The Address Range Check remains purely combinational. 
         The Configuration Register provides the address range used during validation and is treated as stable during normal request processing.
@@ -149,7 +148,7 @@ Represents the only persistent state within the Request Validator.
 
 \begin{itemize}
   \item \textbf{Error path stall:} An address error transaction still
-        consumes a Tag Allocator slot. If the AXID is at maximum
+        consumes a ROB allocation. If the AXID is at maximum
         outstanding (\texttt{STALL} asserted), the error path is also
         held. \texttt{ERR\_VALID} is not asserted until \texttt{STALL}
         deasserts.

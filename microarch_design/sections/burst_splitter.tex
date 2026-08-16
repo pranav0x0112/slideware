@@ -1,158 +1,122 @@
 \section{Burst Splitter}
-\subsection{Overview}
+\label{sec:splitter}
+\subsection{Purpose and bounds}
 
-The Burst Splitter is a two-stage pipelined block shared across all \texttt{N\_CLIENTS} AXI clients. It sits between the AW/AR FIFO and the Packet Formation Unit. Its function is to convert validated AXI burst requests into normalized per-beat packets, splitting bursts that cross DRAM row boundaries into two sub-transactions.
+The Burst Splitter converts one accepted AXI transaction into one to four MC
+packet segments.  It is shared by the read and write request paths.  A row
+boundary is the only splitting boundary: AXI beats are carried by a segment's
+\texttt{beat\_cnt}; they are not independently converted into MC packets.
 
-\medskip
-\noindent\textbf{Input:} AW/AR FIFO output --- \texttt{ADDR}, \texttt{AXID}, \texttt{AXLEN}, \texttt{AXSIZE}, \texttt{AXBURST}
+The configured \texttt{row\_size} is a run-time parameter and is at least
+1~KB.  AXI4 prohibits a burst from crossing a 4~KB boundary, so a transaction
+spans at most 4~KB.  It can therefore cross at most three 1~KB rows and has
+at most four segments:
+\[
+ \texttt{MAX\_SEGMENTS}=1+3=4.
+\]
 
-\noindent\textbf{Output:} Per-beat context (\texttt{addr}, \texttt{tag}, \texttt{pkt\_type}, \texttt{beat\_cnt}) $\rightarrow$ Packet Formation Unit via \texttt{pkt\_valid}
+\subsection{Interfaces and state}
 
-\subsection{Stage 1 --- Decode \& Compute (1 cycle, registered output)}
-
-Stage 1 runs combinatorially and captures all results into the S1$\rightarrow$S2 pipeline register on the next clock edge. Three sub-blocks operate in parallel:
-
-\subsection{Burst Type Decoder}
-\begin{itemize}[noitemsep]
-  \item Input: \texttt{AXBURST[1:0]} from FIFO
-  \item Output: \texttt{is\_wrap} / \texttt{is\_incr} flag $\rightarrow$ pipeline register
-  \item FIXED burst type is not supported (design-time assertion)
-\end{itemize}
-
-\subsection{Row Boundary Checker}
-\begin{itemize}[noitemsep]
-  \item Inputs: \texttt{ADDR}, \texttt{AXLEN}, \texttt{AXSIZE} from FIFO
-  \item Computes: \texttt{addr\_start + burst\_bytes} vs \texttt{ROW\_MASK}
-  \item Outputs: \texttt{split\_needed} flag, \texttt{row\_boundary} address $\rightarrow$ Split Point Calc and Beat Count Calc
-\end{itemize}
-
-\subsection{WRAP Address Generator}
-\begin{itemize}[noitemsep]
-  \item Inputs: \texttt{ADDR}, \texttt{AXLEN}, \texttt{AXSIZE} from FIFO
-  \item Active only when \texttt{is\_wrap = 1}
-  \item Outputs: \texttt{wrap\_boundary}, \texttt{beat\_addrs[0..N]} $\rightarrow$ pipeline register
-  \item Maximum 16 entries (AXI4 WRAP burst max \texttt{AXLEN} = 15)
-\end{itemize}
-
-\subsection{Split Point Calc}
-\begin{itemize}[noitemsep]
-  \item Inputs: \texttt{row\_boundary} from Row Boundary Checker; \texttt{ADDR} from FIFO
-  \item Computes: \texttt{addr\_b = row\_boundary}, \texttt{beat\_cnt\_b = total\_beats $-$ beat\_cnt\_a}
-  \item Output: \texttt{addr\_b}, \texttt{beat\_cnt\_b} $\rightarrow$ pipeline register
-\end{itemize}
-
-\subsection{Beat Count Calc}
-\begin{itemize}[noitemsep]
-  \item Inputs: \texttt{row\_boundary} from Row Boundary Checker; \texttt{AXLEN} from FIFO
-  \item Computes: \texttt{beat\_cnt\_a = beats\_to\_row\_end}, \texttt{total\_beats = AXLEN + 1}
-  \item Output: \texttt{beat\_cnt\_a}, \texttt{total\_beats} $\rightarrow$ pipeline register
-\end{itemize}
-
-\subsection{S1$\rightarrow$S2 Pipeline Register (clocked)}
+At transaction acceptance, the selected read or write ROB allocates
+\texttt{ROB\_INDEX[7:0]}.  The splitter accepts that index with the AXI
+metadata and retains it for the whole transaction.  Stage~1 determines
+\texttt{num\_segments} and writes the Segment Table.  It presents
+\texttt{splitter\_pkt\_count[2:0]=num\_segments} to the corresponding ROB;
+this is the sole source of \texttt{exp\_pkts}.  It is not derived from
+\texttt{AWLEN+1} or \texttt{ARLEN+1}.
 
 \begin{center}
-\texttt{\{ addr\_a, beat\_cnt\_a, addr\_b, beat\_cnt\_b, split\_needed, is\_wrap, beat\_addrs[], axid, pkt\_type, tag \}}
-\end{center}
-
-\subsection{Stage 2 --- Emit \& Track}
-
-Stage 2 is multi-cycle when a split is needed. It stalls Stage 1 (via \texttt{s1\_busy}) while emitting sub-transaction B.
-
-\subsection{Emit FSM}
-
-\begin{itemize}[noitemsep]
-  \item \texttt{IDLE $\rightarrow$ EMIT\_A}
-  \item \texttt{EMIT\_A $\rightarrow$ IDLE} \hfill (split\_needed = 0)
-  \item \texttt{EMIT\_A $\rightarrow$ EMIT\_B} \hfill (split\_needed = 1)
-  \item \texttt{EMIT\_B $\rightarrow$ IDLE}
-  \item Hold current state if \texttt{pkt\_ready = 0}
-  \item Asserts \texttt{s1\_busy} during \texttt{EMIT\_B} to stall Stage 1
-\end{itemize}
-
-\subsection{Sub-transaction A Mux}
-\begin{itemize}[noitemsep]
-  \item Selects: \texttt{addr\_a}, \texttt{beat\_cnt\_a}, \texttt{tag}, \texttt{pkt\_type} from pipeline register
-  \item Forwards to Pkt Assembler on cycle N
-\end{itemize}
-
-\subsection{Sub-transaction B Mux}
-\begin{itemize}[noitemsep]
-  \item Selects: \texttt{addr\_b}, \texttt{beat\_cnt\_b}, same \texttt{tag}, \texttt{pkt\_type} from pipeline register
-  \item Forwards to Pkt Assembler on cycle N+1
-\end{itemize}
-
-\subsection{Beat Tracker}
-\begin{itemize}[noitemsep]
-  \item Maintains \texttt{beat\_cnt\_reg}; decrements on \texttt{pkt\_accept}
-  \item Asserts \texttt{last\_beat} flag when count reaches zero
-  \item Output: \texttt{last\_beat} $\rightarrow$ Pkt Assembler
-\end{itemize}
-
-\subsection{WRAP Beat Address Table}
-\begin{itemize}[noitemsep]
-  \item Up to 16-entry register file, written once on S1$\rightarrow$S2 pipeline register transfer
-  \item Input: \texttt{beat\_addrs[]} from S1$\rightarrow$S2 pipeline register
-  \item Read sequentially by \texttt{beat\_idx} counter
-  \item Output: current beat address $\rightarrow$ Pkt Assembler
-\end{itemize}
-
-\subsection{Pkt Assembler}
-\begin{itemize}[noitemsep]
-  \item Inputs: \texttt{addr}, \texttt{tag}, \texttt{pkt\_type}, \texttt{beat\_cnt} from Sub-txn A/B mux; \texttt{last\_beat} from Beat Tracker; beat address from WRAP beat addr table
-  \item Assembles normalized read (42-bit) or write (618-bit) packet
-  \item Asserts \texttt{pkt\_valid} $\rightarrow$ Packet Formation Unit
-\end{itemize}
-
-\subsection{Backpressure \& Control Signals}
-
-\begin{center}
-\begin{tabularx}{\textwidth}{>{\ttfamily}l >{\ttfamily}l X}
+\begin{tabular}{lll}
 \toprule
-\textbf{Signal} & \textbf{Direction} & \textbf{Description} \\
+\textbf{State} & \textbf{Width/depth} & \textbf{Meaning}\\
 \midrule
-s1\_busy   & Emit FSM $\rightarrow$ AW/AR FIFO     & Stalls Stage 1 from consuming next FIFO entry during EMIT\_B \\
-pkt\_ready & Packet Formation Unit $\rightarrow$ Emit FSM & Back-pressure from downstream; FSM holds state when low \\
-pkt\_valid & Pkt Assembler $\rightarrow$ Packet Formation Unit & Indicates normalized packet ready for consumption \\
-\bottomrule
-\end{tabularx}
-\end{center}
-
-\subsection{Three Paths Through the Splitter}
-
-\begin{description}[noitemsep]
-  \item[Path A --- No split (INCR, no row crossing)] \hfill \\
-    \texttt{split\_needed = 0}. Stage 2 emits one packet (\texttt{EMIT\_A $\rightarrow$ IDLE} in 1 cycle). \texttt{s1\_busy} never asserted. Throughput: 1 transaction / cycle.
-
-  \item[Path B --- Row-boundary split (INCR, crosses boundary)] \hfill \\
-    \texttt{split\_needed = 1}. Stage 1 computes \texttt{addr\_b}, \texttt{beat\_cnt\_b}. Stage 2: \texttt{EMIT\_A} cycle N, asserts \texttt{s1\_busy}, \texttt{EMIT\_B} cycle N+1. Throughput: 1 transaction / 2 cycles.
-
-  \item[Path C --- WRAP burst] \hfill \\
-    WRAP address generator fills \texttt{beat\_addrs[]}. Stage 2 iterates via WRAP beat addr table indexed by \texttt{beat\_idx}. May also split at row boundary.
-\end{description}
-
-\subsection{Internal State}
-
-\begin{center}
-\begin{tabular}{>{\ttfamily}l l}
-\toprule
-\textbf{Field} & \textbf{Description} \\
-\midrule
-base\_addr   & Base address of current burst \\
-beat\_idx    & Current beat index within burst \\
-beats\_left  & Remaining beats to emit \\
-burst\_type  & INCR or WRAP \\
-burst\_len   & Total beats (AXLEN + 1) \\
-txn\_tag     & Allocated transaction tag \texttt{[AXID[5:0] + seqnum[1:0]]} \\
+Segment Table & 4 entries & \texttt{\{addr[31:0], beat\_cnt[7:0]\}} per segment\\
+\texttt{ROB\_INDEX} & 8 bits & Transaction index retained while segments issue\\
+\texttt{num\_segments} & 3 bits & Number of valid Segment Table entries, 1--4\\
+\texttt{seg\_idx} & 2 bits & Segment currently being emitted\\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\subsection{Timing Notes}
+\subsection{Stage 1 --- segment construction}
+
+Stage~1 receives address, burst length, size, burst type, AXID, packet type,
+and \texttt{ROB\_INDEX}.  Using the run-time \texttt{row\_size}, it walks
+the addressed burst span and partitions it only at row boundaries.  It writes
+one Segment Table entry for each contiguous portion of the transaction.  The
+resulting count is in the inclusive range 1--4.  The AXI 4~KB constraint and
+minimum row size make a fifth entry unreachable.
+
+For a read allocation, Stage~1 also provides the initialized count to the
+read ROB before its \texttt{ROB\_INDEX} becomes visible at the relevant
+per-AXID Slot FIFO.  The write path follows the identical ordering.
+
+\subsection{Stage 2 --- sequential emission}
+
+Stage~2 emits Segment Table entries in increasing \texttt{seg\_idx} order.
+For each accepted packet it forms
+\[
+ \texttt{GLOBAL\_TAG[9:0]=\{ROB\_INDEX[7:0],PACKET\_NUMBER[1:0]\}},
+ \qquad \texttt{PACKET\_NUMBER=seg\_idx}.
+\]
+Packet Formation receives \texttt{addr}, \texttt{beat\_cnt}, packet type,
+and \texttt{GLOBAL\_TAG}; it serializes one MC request packet per Segment
+Table entry.  For reads, the packet-issue path also obtains a pooled Read Data
+Buffer pointer and records it in \texttt{dbuf\_ptr[seg\_idx]} before that
+packet can complete.
+
+Stage~2 advances \texttt{seg\_idx} only on downstream packet acceptance.  It
+stalls Stage~1 whenever it is emitting a multi-segment transaction, thereby
+preserving the Segment Table and its associated \texttt{ROB\_INDEX}.  After
+the final accepted segment it returns to idle and permits the next Stage~1
+transaction.
+
+\subsection{WRAP addressing within the Segment Table model}
+
+The Segment Table and WRAP address generation solve different problems and
+operate together for a WRAP burst that crosses a row boundary:
 
 \begin{itemize}[noitemsep]
-  \item Stage 1 combinatorial depth must close timing in 1 cycle. WRAP address generator is the critical path --- limited to AXLEN $\leq$ 15 for WRAP bursts (AXI4 constraint).
-  \item S1$\rightarrow$S2 register clocked at \texttt{posedge clk}.
-  \item \texttt{pkt\_ready = 0} holds the Emit FSM in its current state; \texttt{s1\_busy} remains asserted until \texttt{IDLE} is reached.
-  \item Tag Allocator must have a valid tag before Stage 1 can proceed --- Tag Allocator stall folds into \texttt{s1\_busy}.
-  \item Error path (\texttt{pkt\_type = Err\_write / Err\_read}): set in Stage 1, carried through pipeline register unchanged. Both sub-transactions on a split carry the same \texttt{pkt\_type}.
+  \item Stage~1's row-boundary partitioning applies identically to INCR and
+        WRAP bursts: it determines \emph{how many} row-bounded segments the
+        transaction requires and each segment's \texttt{addr}/\texttt{beat\_cnt}
+        starting point, independent of burst type.
+  \item WRAP address generation determines the \emph{per-beat} address
+        sequence \emph{within} a segment.  Because a WRAP burst's beat
+        addresses are not simply contiguous beyond its wrap boundary, the
+        beat-by-beat address a WRAP segment presents to MC Core is produced
+        by WRAP address generation, not by incrementing \texttt{addr} by the
+        transfer size each beat.
+  \item Both mechanisms are required together for a WRAP burst that crosses
+        one or more row boundaries: the Segment Table determines segment
+        count and each segment's starting point, while WRAP address
+        generation determines the beat addresses used within each segment.
+        Neither mechanism substitutes for the other.
+\end{itemize}
+
+This preserves the existing WRAP Beat Address Table semantics --- a
+sequential, per-beat address sequence consumed in beat order --- scoped now
+to one Segment Table entry at a time rather than to the whole burst.
+
+\subsection{Backpressure and error packets}
+
+\begin{itemize}[noitemsep]
+  \item A full selected ROB Slot FIFO, an empty selected ROB Free List, or
+        unavailable read Data Buffer capacity prevents acceptance upstream as
+        appropriate to that path.
+  \item Packet-FIFO backpressure holds the current Segment Table entry and
+        its \texttt{seg\_idx}; it does not alter \texttt{num\_segments}.
+  \item Error read and error write transactions use the same segmentation and
+        \texttt{GLOBAL\_TAG} mechanism.  Their packet type is carried in
+        every generated segment.
+\end{itemize}
+
+\subsection{Timing notes}
+
+\begin{itemize}[noitemsep]
+  \item \texttt{splitter\_pkt\_count} is the number of packets generated by
+        this one transaction, not a sum across a burst.
+  \item \texttt{seg\_idx} is assigned at packet emission, not allocation.
+  \item Segment Table state is indexed only by \texttt{seg\_idx}; packet
+        counting is independent of AXI beat count.
 \end{itemize}
